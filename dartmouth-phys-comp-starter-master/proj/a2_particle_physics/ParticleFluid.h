@@ -186,7 +186,7 @@ public:
 
 		//Calculate neighbors and Density
 		Update_Neighbors();
-		Update_Density();
+		//Update_Density();
 
 		/*Update_Pressure();
 		Update_Pressure_Force();
@@ -212,15 +212,21 @@ public:
 	////YOUR IMPLEMENTATION (P2 TASK): update the density (particles.D(i)) of each particle based on the kernel function (Wspiky)
 	
 	void Update_Postion_Change() {
-		for (int i = 0; i < solver_iterations; i++) {
+		for (int i = 0; i < particles.Size(); i++) {
+			delta_positions[i] = VectorD::Zero();
+			for (int idx : neighbors[i]) {
+				delta_positions[i] += (lambda_i[i] + lambda_i[neb]) * kernel.Wspiky(particles.X(i) - particles.X(j));
+			}
 		}
 	}
 	void Update_Lambda() {
-		for (int i = 0; i < solver_iterations; i++) {
+		for (int i = 0; i < particles.Size(); i++) {
+			
 		}
 	}
 	void Update_Temp_Position() {
-		for (int i = 0; i < solver_iterations; i++) {
+		for (int i = 0; i < particles.Size(); i++) {
+
 		}
 	}
 	void Update_Density()
