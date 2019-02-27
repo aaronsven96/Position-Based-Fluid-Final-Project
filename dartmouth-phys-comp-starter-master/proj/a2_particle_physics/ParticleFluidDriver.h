@@ -78,17 +78,17 @@ public:
 	}
 
 	////User interaction
-	virtual bool Mouse_Click(int left,int right,int mid,int x,int y,int w,int h)
-	{
-		if(left!=1){return false;}
-		Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
-		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
-		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
-		real r=.1*static_cast<float>(rand()%1000)/1000.+.15;
-		Add_Particle(p_pos);
-		Add_Solid_Circle(fluid.particles.Size()-1);
-		return true;
-	}
+// 	virtual bool Mouse_Click(int left,int right,int mid,int x,int y,int w,int h)
+// 	{
+// 		if(left!=1){return false;}
+// 		Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
+// 		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
+// 		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
+// 		real r=.1*static_cast<float>(rand()%1000)/1000.+.15;
+// 		Add_Particle(p_pos);
+// 		Add_Solid_Circle(fluid.particles.Size()-1);
+// 		return true;
+// 	}
 
 protected:
 	void Add_Particle(VectorD pos,real m=1.)
