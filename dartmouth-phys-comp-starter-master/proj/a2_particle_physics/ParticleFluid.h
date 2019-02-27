@@ -6,6 +6,7 @@
 #ifndef __ParticleFluid_h__
 #define __ParticleFluid_h__
 #include "Common.h"
+#include <cstdlib>
 #include "Particles.h"
 #include "ImplicitGeometry.h"
 
@@ -135,9 +136,9 @@ template<int d> class ParticleFluid
 public:
 	Particles<d> particles;
 	Array<Array<int> > neighbors;
-	Array<VectorD> temp_positions;			////temp positions in solver]]
+	Array<VectorD> last_positions;			////temp positions in solver]]
 	Array<VectorD> delta_positions;			////change in positions in solver
-	Array<real> lambda_i;					////array for lambda values
+	Array<VectorD> lambda_i;					////array for lambda values
 	SpatialHashing<d> spatial_hashing;
 	Kernel<d> kernel;
 	int solver_iterations = 10;				////solver iterations
@@ -154,6 +155,8 @@ public:
 	virtual void Initialize()
 	{
 		kernel.Precompute_Coefs(kernel_radius);
+		last_positions.resize(particles.Size());
+		delta_positions.resize(particles.Size());
 
 	}
 
@@ -180,7 +183,8 @@ public:
 		//predict postitions
 		for (int i = 0; i < particles.Size(); i++) {
 			particles.V(i) += particles.F(i) / particles.D(i)*dt;
-			temp_positions[i] = particles.X(i) + particles.V(i)*dt;
+			last_positions[i] = particles.X(i);
+			particles.X(i) = last_positions[i] + particles.V(i)*dt;
 		}
 	
 
@@ -194,6 +198,7 @@ public:
 		
 		//Constraint Solver 
 		for (int i = 0; i < solver_iterations; i++) {
+			Update_Density();
 			Update_Lambda();
 			Update_Postion_Change();
 			Update_Boundary_Collision_Force();
@@ -202,8 +207,8 @@ public:
 		
 		//update position and Velocity
 		for (int i = 0; i < solver_iterations; i++) {
-			particles.V(i) = (temp_positions[i] - particles.X(i))*(1 / dt);
-			particles.X(i) = temp_positions[i];
+			particles.V(i) = (particles.X(i)-last_positions[i])*(1 / dt);
+			//particles.X(i) = temp_positions[i];
 		}
 		
 	}
@@ -215,20 +220,35 @@ public:
 		for (int i = 0; i < particles.Size(); i++) {
 			delta_positions[i] = VectorD::Zero();
 			for (int idx : neighbors[i]) {
-				delta_positions[i] += (lambda_i[i] + lambda_i[neb]) * kernel.Wspiky(particles.X(i) - particles.X(j));
+				delta_positions[i] += (lambda_i[i] + lambda_i[idx]) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));
 			}
 		}
 	}
 	void Update_Lambda() {
 		for (int i = 0; i < particles.Size(); i++) {
-			
+			real Ci = (particles.D(i) / density_0) - 1;
+			VectorD sum = VectorD::Zero();
+			for (int idx : neighbors[i]) {
+				if (i == idx) {
+					for (int idx2 : neighbors[i]) {
+						if (i != idx2) {
+							sum += abs(kernel.gradientWspiky(particles.X(i)-particles.X(idx2)));
+						}
+					}
+				}
+				else {
+					sum += abs(kernel.Wspiky(particles.X(i) - particles.X(idx)));
+				}
+			}
+			lambda_i[i] = (Ci / (pow(sum,2))) * 1/density_0;
 		}
 	}
 	void Update_Temp_Position() {
 		for (int i = 0; i < particles.Size(); i++) {
-
+			particles.X(i) = particles.X(i) + delta_positions[i];
 		}
 	}
+
 	void Update_Density()
 	{
 		/* Your implementation start */
