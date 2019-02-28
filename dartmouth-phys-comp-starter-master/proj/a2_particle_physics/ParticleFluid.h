@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include "Particles.h"
 #include "ImplicitGeometry.h"
+#include "Math.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -22,15 +23,28 @@ public:
 	real coef_dWspiky;
 	real coef_Wvis;
 	real coef_d2Wvis;
+	real coef_1poly6;
+	real coef_1poly4;
+	real coef_1poly2;
 	real pi=3.1415927;
 
 	void Precompute_Coefs(real _h)
 	{
 		h=_h;
-		coef_Wspiky=15.0/(pi*pow(h,6));
-		coef_dWspiky=-45.0/(pi*pow(h,6));
+		coef_1poly6 = pow(h, 6);
+		coef_Wspiky=15.0/(pi*coef_1poly6);
+		coef_dWspiky=-45.0/(pi*coef_1poly6);
 		coef_Wvis=2*pi*pow(h,3);
-		coef_d2Wvis=45.0/(pi*pow(h,6));
+		coef_d2Wvis=45.0/(pi*coef_1poly6);
+		coef_1poly4 = 3 * pow(h, 4);
+		coef_1poly2 = 3 * pow(h, 2);
+
+	}
+	////Poly6
+	real Poly6(const VectorD& xji) {
+		real r=xji.norm();
+		if (r >= 0 && r <= h) { return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
+		else { return 0; }
 	}
 
 	////Kernel Spiky
@@ -39,8 +53,6 @@ public:
 		real r=xji.norm();
 		if(r>=0&&r<=h){return 15.0/(pi*pow(h,6))*pow(h-r,3);}
 		else{return 0;}
-		//std::cout << "norm:" << r;
-		//return 15.0 / (pi*pow(h, 6))*pow(h - r, 3);
 	}
 	VectorD gradientWspiky(const VectorD& v){
 		real r=v.norm();
@@ -138,7 +150,7 @@ public:
 	Array<Array<int> > neighbors;
 	Array<VectorD> last_positions;			////temp positions in solver]]
 	Array<VectorD> delta_positions;			////change in positions in solver
-	Array<VectorD> lambda_i;					////array for lambda values
+	Array<real> lambda_i;					////array for lambda values
 	SpatialHashing<d> spatial_hashing;
 	Kernel<d> kernel;
 	int solver_iterations = 10;				////solver iterations
@@ -232,15 +244,15 @@ public:
 				if (i == idx) {
 					for (int idx2 : neighbors[i]) {
 						if (i != idx2) {
-							sum += abs(kernel.gradientWspiky(particles.X(i)-particles.X(idx2)));
+							sum += kernel.gradientWspiky(particles.X(i)-particles.X(idx2));
 						}
 					}
 				}
 				else {
-					sum += abs(kernel.Wspiky(particles.X(i) - particles.X(idx)));
+					sum +=kernel.gradientWspiky(particles.X(i) - particles.X(idx));
 				}
 			}
-			lambda_i[i] = (Ci / (pow(sum,2))) * 1/density_0;
+			lambda_i[i] = (Ci / (pow(sum.norm(),2))) * 1/density_0;
 		}
 	}
 	void Update_Temp_Position() {
@@ -257,7 +269,7 @@ public:
 			Array<int> cur_neighbors = neighbors[i];
 			particles.D(i) = 0;
 			for (int idx : cur_neighbors) {
-				particles.D(i) += particles.M(idx)*kernel.Wspiky(particles.X(idx)-particles.X(i));
+				particles.D(i) += particles.M(idx)*kernel.Poly6(particles.X(idx)-particles.X(i));
 			}
 		}
 		/* Your implementation end */
