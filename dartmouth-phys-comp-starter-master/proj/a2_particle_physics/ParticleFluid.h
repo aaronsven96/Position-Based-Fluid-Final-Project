@@ -26,6 +26,7 @@ public:
 	real coef_1poly6;
 	real coef_1poly4;
 	real coef_1poly2;
+	real coef_9poly6;
 	real pi=3.1415927;
 
 	void Precompute_Coefs(real _h)
@@ -38,12 +39,13 @@ public:
 		coef_d2Wvis=45.0/(pi*coef_1poly6);
 		coef_1poly4 = 3 * pow(h, 4);
 		coef_1poly2 = 3 * pow(h, 2);
+		coef_9poly6 = 315/(pi*64* pow(h, 9));
 
 	}
-	////Poly6
+	////Kernel Poly6
 	real Poly6(const VectorD& xji) {
 		real r=xji.norm();
-		if (r >= 0 && r <= h) { return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
+		if (r >= 0 && r <= h) { return (coef_9poly6 * pow(pow(h, 2)*pow(r, 2), 3)); }//return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
 		else { return 0; }
 	}
 
@@ -169,7 +171,7 @@ public:
 		kernel.Precompute_Coefs(kernel_radius);
 		last_positions.resize(particles.Size());
 		delta_positions.resize(particles.Size());
-
+		lambda_i.resize(particles.Size());
 	}
 
 	virtual void Update_Neighbors()
@@ -191,6 +193,8 @@ public:
 			particles.F(i)=VectorD::Zero();}
 		
 		Update_Body_Force();
+		Update_Boundary_Collision_Force();
+		Update_Neighbors();
 		
 		//predict postitions
 		for (int i = 0; i < particles.Size(); i++) {
@@ -199,27 +203,17 @@ public:
 			particles.X(i) = last_positions[i] + particles.V(i)*dt;
 		}
 	
-
-		//Calculate neighbors and Density
-		Update_Neighbors();
-		//Update_Density();
-
-		/*Update_Pressure();
-		Update_Pressure_Force();
-		Update_Viscosity_Force();*/
-		
 		//Constraint Solver 
-		for (int i = 0; i < solver_iterations; i++) {
+		for (int i = 0; i < 100/*solver_iterations*/; i++) {
 			Update_Density();
 			Update_Lambda();
 			Update_Postion_Change();
-			Update_Boundary_Collision_Force();
 			Update_Temp_Position();
 		}
 		
 		//update position and Velocity
-		for (int i = 0; i < solver_iterations; i++) {
-			particles.V(i) = (particles.X(i)-last_positions[i])*(1 / dt);
+		for (int i = 0; i < particles.Size(); i++) {
+			particles.V(i) = (particles.X(i)-last_positions[i])/ dt;
 			//particles.X(i) = temp_positions[i];
 		}
 		
@@ -275,50 +269,7 @@ public:
 		/* Your implementation end */
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	////YOUR IMPLEMENTATION (P2 TASK): update the pressure (particles.P(i)) of each particle based on its current density (particles.D(i)) and the rest density (density_0)
-	void Update_Pressure()
-	{
-		/* Your implementation start */
 	
-		for (int i = 0; i < particles.Size(); i++) {
-			particles.P(i) = (particles.D(i)- density_0) *pressure_density_coef;
-		}
-		/* Your implementation end */
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	////YOUR IMPLEMENTATION (P2 TASK): compute the pressure force for each particle based on its current pressure (particles.P(i)) and the kernel function gradient (gradientWspiky), and then add the force to particles.F(i)
-	void Update_Pressure_Force()
-	{
-		/* Your implementation start */
-		for (int i = 0; i < particles.Size(); i++) {
-			Array<int> cur_neighbors = neighbors[i];
-			for (int idx : cur_neighbors) {
-				particles.F(i) -= ((particles.P(i) + particles.P(idx))*particles.M(idx) / (2 * particles.D(idx)))
-					*kernel.gradientWspiky(particles.X(i) - particles.X(idx));
-			}
-		}
-		/* Your implementation end */
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	////YOUR IMPLEMENTATION (P2 TASK): compute the viscosity force for each particle based on its current velocity difference (particles.V(j)-particles.V(i)) and the kernel function Laplacian (laplacianWvis), and then add the force to particles.F(i)
-	void Update_Viscosity_Force()
-	{
-		/* Your implementation start */
-		for (int i = 0; i < particles.Size(); i++) {
-			Array<int> cur_neighbors = neighbors[i];
-			VectorD vis_f= VectorD::Zero();
-			for (int idx:cur_neighbors) {
-				vis_f += (particles.V(idx) - particles.V(i))*(particles.M(idx) / particles.D(idx))*
-					kernel.laplacianWvis(particles.X(i) - particles.X(idx));
-			}
-			particles.F(i) += viscosity_coef*vis_f;
-		}
-		/* Your implementation end */
-	}
-
 
 	void Update_Body_Force()
 	{
