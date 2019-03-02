@@ -194,25 +194,36 @@ public:
 		
 		Update_Body_Force();
 		Update_Boundary_Collision_Force();
-		Update_Neighbors();
+		
 		
 		//predict postitions
 		for (int i = 0; i < particles.Size(); i++) {
-			particles.V(i) += particles.F(i) / particles.D(i)*dt;
-			last_positions[i] = particles.X(i);
+			particles.V(i) += particles.F(i) *dt;
+			for(int j=0;j<d;j++){
+				last_positions[i][j] = particles.X(i)[j];
+			}
+			//if(i==1)std::cout << "Before change x:" << last_positions[i][1] << " Before chnage x:" << particles.X(i)[1] << "\n";
 			particles.X(i) = last_positions[i] + particles.V(i)*dt;
+			//if(i==1)std::cout << "before x:" << last_positions[i][1] << " After x:" << particles.X(i)[1] << "\n";
 		}
+
+		//Update_Neighbors();
 	
 		//Constraint Solver 
-		for (int i = 0; i < 100/*solver_iterations*/; i++) {
+		for (int i = 0; i < 5; i++) {
+			//std::cout << i;
+			Update_Neighbors();
+
 			Update_Density();
 			Update_Lambda();
 			Update_Postion_Change();
 			Update_Temp_Position();
 		}
+		/*solver_iterations*/
 		
 		//update position and Velocity
 		for (int i = 0; i < particles.Size(); i++) {
+			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1];
 			particles.V(i) = (particles.X(i)-last_positions[i])/ dt;
 			//particles.X(i) = temp_positions[i];
 		}
@@ -226,29 +237,34 @@ public:
 		for (int i = 0; i < particles.Size(); i++) {
 			delta_positions[i] = VectorD::Zero();
 			for (int idx : neighbors[i]) {
-				delta_positions[i] += (lambda_i[i] + lambda_i[idx]) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+				//std::cout << delta_positions[i];
+				delta_positions[i] += (lambda_i[i] + lambda_i[idx]) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));	
 			}
+			delta_positions[i] = delta_positions[i] / density_0;
+			std::cout << "x:" << delta_positions[i][0] << " y:" << delta_positions[i][1];
 		}
 	}
 	void Update_Lambda() {
 		for (int i = 0; i < particles.Size(); i++) {
 			real Ci = (particles.D(i) / density_0) - 1;
-			VectorD sum = VectorD::Zero();
+			real sum = 0;//VectorD::Zero();
 			for (int idx : neighbors[i]) {
 				if (i == idx) {
 					for (int idx2 : neighbors[i]) {
 						if (i != idx2) {
-							sum += kernel.gradientWspiky(particles.X(i)-particles.X(idx2));
+							sum += pow((kernel.gradientWspiky(particles.X(i)-particles.X(idx2))/density_0).norm(),2);
 						}
 					}
 				}
 				else {
-					sum +=kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+					sum += pow((kernel.gradientWspiky(particles.X(i) - particles.X(idx))/density_0).norm(),2);//kernel.gradientWspiky(particles.X(i) - particles.X(idx));
 				}
 			}
-			lambda_i[i] = (Ci / (pow(sum.norm(),2))) * 1/density_0;
+			lambda_i[i] = -1 * (Ci / sum);//(sum/density_0));
+			//std::cout << "lambda:" << lambda_i[i] << "  ";
 		}
 	}
+
 	void Update_Temp_Position() {
 		for (int i = 0; i < particles.Size(); i++) {
 			particles.X(i) = particles.X(i) + delta_positions[i];
@@ -263,7 +279,7 @@ public:
 			Array<int> cur_neighbors = neighbors[i];
 			particles.D(i) = 0;
 			for (int idx : cur_neighbors) {
-				particles.D(i) += particles.M(idx)*kernel.Poly6(particles.X(idx)-particles.X(i));
+				particles.D(i) += kernel.Poly6(particles.X(idx)-particles.X(i));
 			}
 		}
 		/* Your implementation end */
