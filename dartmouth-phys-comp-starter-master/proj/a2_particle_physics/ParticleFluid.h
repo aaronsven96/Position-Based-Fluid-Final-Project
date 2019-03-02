@@ -45,7 +45,13 @@ public:
 	////Kernel Poly6
 	real Poly6(const VectorD& xji) {
 		real r=xji.norm();
-		if (r >= 0 && r <= h) { return (coef_9poly6 * pow(pow(h, 2)*pow(r, 2), 3)); }//return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
+		if (r >= 0 && r <= h) { return (coef_9poly6 * pow(pow(h, 2)-pow(r, 2), 3)); }//return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
+		else { return 0; }
+	}
+
+	real Poly6_scorr(real h, real coeff) {
+		real r=coeff*h;
+		if (r >= 0 && r <= h) { return (coef_9poly6 * pow(pow(h, 2)-pow(r, 2), 3)); }//return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
 		else { return 0; }
 	}
 
@@ -56,6 +62,14 @@ public:
 		if(r>=0&&r<=h){return 15.0/(pi*pow(h,6))*pow(h-r,3);}
 		else{return 0;}
 	}
+
+	real Wspiky_scorr(real h, real coeff)
+	{
+		real r=coeff*h;
+		if(r>=0&&r<=h){return 15.0/(pi*pow(h,6))*pow(h-r,3);}
+		else{return 0;}
+	}
+
 	VectorD gradientWspiky(const VectorD& v){
 		real r=v.norm();
 		if(r<= h&&r>0){return -45.0/(pi*pow(h,6))*pow(h-r,2)*v/r;}
@@ -155,7 +169,7 @@ public:
 	Array<real> lambda_i;					////array for lambda values
 	SpatialHashing<d> spatial_hashing;
 	Kernel<d> kernel;
-	int solver_iterations = 10;				////solver iterations
+	int solver_iterations = 15;				////solver iterations
 	real kernel_radius=(real).8;			////kernel radius
 	real pressure_density_coef=(real)1e1;	////pressure-density-relation coefficient, used in Update_Pressure()
 	real density_0=(real)10.;				////rest density, used in Update_Pressure()
@@ -207,12 +221,12 @@ public:
 			//if(i==1)std::cout << "before x:" << last_positions[i][1] << " After x:" << particles.X(i)[1] << "\n";
 		}
 
-		//Update_Neighbors();
+		Update_Neighbors();
 	
 		//Constraint Solver 
 		for (int i = 0; i < 5; i++) {
 			//std::cout << i;
-			Update_Neighbors();
+			// Update_Neighbors();
 
 			Update_Density();
 			Update_Lambda();
@@ -234,33 +248,51 @@ public:
 	////YOUR IMPLEMENTATION (P2 TASK): update the density (particles.D(i)) of each particle based on the kernel function (Wspiky)
 	
 	void Update_Postion_Change() {
+		real k = 0.2;
+		real n = 4;
+
+		// delta_q.resize(particles.X(i);
+		real denom = 0;
+		real coeff = 0.1;
+		denom = kernel.Wspiky_scorr(kernel_radius, coeff);
+		// denom = kernel.Poly6_scorr(kernel_radius); 
+		// delta_q(2) = 0.3*kernel_radius;
+		real s_corr = 0;
+
 		for (int i = 0; i < particles.Size(); i++) {
 			delta_positions[i] = VectorD::Zero();
 			for (int idx : neighbors[i]) {
 				//std::cout << delta_positions[i];
-				delta_positions[i] += (lambda_i[i] + lambda_i[idx]) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));	
+				
+
+				s_corr = -k * pow( (kernel.Wspiky(particles.X(i) - particles.X(idx))/denom) , n);
+				std::cout << s_corr << "\n";
+				// std::cout << lambda_i[i] + lambda_i[idx] << "\n";
+				
+				delta_positions[i] += (lambda_i[i] + lambda_i[idx] + s_corr) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));	
 			}
 			delta_positions[i] = delta_positions[i] / density_0;
-			std::cout << "x:" << delta_positions[i][0] << " y:" << delta_positions[i][1];
+			// std::cout << "x:" << delta_positions[i][0] << " y:" << delta_positions[i][1];
 		}
 	}
 	void Update_Lambda() {
 		for (int i = 0; i < particles.Size(); i++) {
 			real Ci = (particles.D(i) / density_0) - 1;
 			real sum = 0;//VectorD::Zero();
-			for (int idx : neighbors[i]) {
+			
+			for (int idx2 : neighbors[i]) {
+				if (i != idx2) {
+					sum += pow((kernel.gradientWspiky(particles.X(i)-particles.X(idx2))/density_0).norm(),2);
+				}
+			}
+			/*for (int idx : neighbors[i]) {
 				if (i == idx) {
-					for (int idx2 : neighbors[i]) {
-						if (i != idx2) {
-							sum += pow((kernel.gradientWspiky(particles.X(i)-particles.X(idx2))/density_0).norm(),2);
-						}
-					}
 				}
 				else {
 					sum += pow((kernel.gradientWspiky(particles.X(i) - particles.X(idx))/density_0).norm(),2);//kernel.gradientWspiky(particles.X(i) - particles.X(idx));
 				}
-			}
-			lambda_i[i] = -1 * (Ci / sum);//(sum/density_0));
+			}*/
+			lambda_i[i] = -1 * (Ci / (sum*2 + 1) );//(sum/density_0));
 			//std::cout << "lambda:" << lambda_i[i] << "  ";
 		}
 	}
