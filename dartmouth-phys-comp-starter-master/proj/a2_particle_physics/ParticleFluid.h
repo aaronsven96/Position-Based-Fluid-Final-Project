@@ -201,6 +201,28 @@ public:
 		}
 	}
 
+	virtual void Update_Vorticity()
+	{
+		VectorD weight;
+		VectorD N;
+		VectorD small_n;
+
+		for(i=0; i<particles.Size(); i++) {
+			weight = VectorD::Zero();
+			N = VectorD::Zero();
+			small_n = VectorD::Zero();
+
+			for(idx : neighbors[i]){
+				weight += (particles.V(j)-particles.V(idx)).cross(kernel.gradientWspiky( particles.X(i) - particles.X(idx)))
+			}
+
+			N = weight/weight.norm();
+			v_force = N.cross(weight);
+
+		}
+
+	}
+
 	virtual void Advance(const real dt)
 	{
 		for(int i=0;i<particles.Size();i++){
@@ -237,7 +259,7 @@ public:
 		
 		//update position and Velocity
 		for (int i = 0; i < particles.Size(); i++) {
-			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1];
+			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
 			particles.V(i) = (particles.X(i)-last_positions[i])/ dt;
 			//particles.X(i) = temp_positions[i];
 		}
@@ -265,8 +287,9 @@ public:
 				//std::cout << delta_positions[i];
 				
 
-				s_corr = -k * pow( (kernel.Wspiky(particles.X(i) - particles.X(idx))/denom) , n);
-				std::cout << s_corr << "\n";
+				// s_corr = -k * pow( (kernel.Wspiky(particles.X(i) - particles.X(idx))/denom) , n);
+				s_corr = 0;
+				// std::cout << s_corr << "\n";
 				// std::cout << lambda_i[i] + lambda_i[idx] << "\n";
 				
 				delta_positions[i] += (lambda_i[i] + lambda_i[idx] + s_corr) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));	
