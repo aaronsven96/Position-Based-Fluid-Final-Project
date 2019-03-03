@@ -168,6 +168,7 @@ public:
 	Array<VectorD> delta_positions;			////change in positions in solver
 	Array<real> lambda_i;					////array for lambda values
 	SpatialHashing<d> spatial_hashing;
+	
 	Kernel<d> kernel;
 	int solver_iterations = 15;				////solver iterations
 	real kernel_radius=(real).8;			////kernel radius
@@ -177,6 +178,15 @@ public:
 	real kd=(real)1e2;						////stiffness for environmental collision response
 	VectorD g=VectorD::Unit(1)*(real)-1.;	////gravity
 	
+	////realx coef
+	
+	real relax = .5;
+
+	////values used in scorr 
+	real k = 0.1;
+	real n = 4;
+	real coeff = 0.1;
+
 	////Environment objects
 	Array<ImplicitGeometry<d>* > env_objects;
 
@@ -247,7 +257,7 @@ public:
 		Update_Neighbors();
 	
 		//Constraint Solver 
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 10; i++) {
 			//std::cout << i;
 			// Update_Neighbors();
 
@@ -271,12 +281,10 @@ public:
 	////YOUR IMPLEMENTATION (P2 TASK): update the density (particles.D(i)) of each particle based on the kernel function (Wspiky)
 	
 	void Update_Postion_Change() {
-		real k = 0.2;
-		real n = 4;
-
+		
 		// delta_q.resize(particles.X(i);
 		real denom = 0;
-		real coeff = 0.1;
+		
 		denom = kernel.Wspiky_scorr(kernel_radius, coeff);
 		// denom = kernel.Poly6_scorr(kernel_radius); 
 		// delta_q(2) = 0.3*kernel_radius;
@@ -287,9 +295,13 @@ public:
 			for (int idx : neighbors[i]) {
 				//std::cout << delta_positions[i];
 				
-
-				// s_corr = -k * pow( (kernel.Wspiky(particles.X(i) - particles.X(idx))/denom) , n);
-				s_corr = 0;
+				
+				 //s_corr = -k * pow( (kernel.Wspiky(particles.X(i) - particles.X(idx))/denom) , n);
+				 //if (neighbors[i].size() < 15) {
+					 //std::cout << s_corr << "\n";
+					 //s_corr = 0;
+				 //}
+				//s_corr = 0;
 				// std::cout << s_corr << "\n";
 				// std::cout << lambda_i[i] + lambda_i[idx] << "\n";
 				
@@ -309,14 +321,7 @@ public:
 					sum += pow((kernel.gradientWspiky(particles.X(i)-particles.X(idx2))/density_0).norm(),2);
 				}
 			}
-			/*for (int idx : neighbors[i]) {
-				if (i == idx) {
-				}
-				else {
-					sum += pow((kernel.gradientWspiky(particles.X(i) - particles.X(idx))/density_0).norm(),2);//kernel.gradientWspiky(particles.X(i) - particles.X(idx));
-				}
-			}*/
-			lambda_i[i] = -1 * (Ci / (sum*2 + 1) );//(sum/density_0));
+			lambda_i[i] = -1 * (Ci / (sum*2 + relax) );//(sum/density_0));
 			//std::cout << "lambda:" << lambda_i[i] << "  ";
 		}
 	}
