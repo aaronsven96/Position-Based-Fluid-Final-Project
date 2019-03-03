@@ -202,25 +202,26 @@ public:
 	}
 
 	virtual void Update_Vorticity()
-	{
+	{/*
 		VectorD weight;
 		VectorD N;
 		VectorD small_n;
+		VectorD v_force;
 
-		for(i=0; i<particles.Size(); i++) {
+		for(int i=0; i<particles.Size(); i++) {
 			weight = VectorD::Zero();
 			N = VectorD::Zero();
 			small_n = VectorD::Zero();
 
-			for(idx : neighbors[i]){
-				weight += (particles.V(j)-particles.V(idx)).cross(kernel.gradientWspiky( particles.X(i) - particles.X(idx)))
+			for(int idx : neighbors[i]){
+				weight += (particles.V(i) - particles.V(idx)).cross(kernel.gradientWspiky(particles.X(i) - particles.X(idx)));
 			}
 
 			N = weight/weight.norm();
 			v_force = N.cross(weight);
 
 		}
-
+		*/
 	}
 
 	virtual void Advance(const real dt)
