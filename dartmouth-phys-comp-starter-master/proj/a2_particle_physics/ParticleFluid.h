@@ -186,6 +186,7 @@ public:
 	real k = 0.1;
 	real n = 4;
 	real coeff = 0.1;
+	real denom = kernel.Wspiky_scorr(kernel_radius, coeff);
 
 	////Environment objects
 	Array<ImplicitGeometry<d>* > env_objects;
@@ -255,12 +256,10 @@ public:
 		}
 
 		Update_Neighbors();
-	
+
 		//Constraint Solver 
 		for (int i = 0; i < 10; i++) {
 			//std::cout << i;
-			// Update_Neighbors();
-
 			Update_Density();
 			Update_Lambda();
 			Update_Postion_Change();
@@ -283,9 +282,6 @@ public:
 	void Update_Postion_Change() {
 		
 		// delta_q.resize(particles.X(i);
-		real denom = 0;
-		
-		denom = kernel.Wspiky_scorr(kernel_radius, coeff);
 		// denom = kernel.Poly6_scorr(kernel_radius); 
 		// delta_q(2) = 0.3*kernel_radius;
 		real s_corr = 0;
@@ -294,13 +290,13 @@ public:
 			delta_positions[i] = VectorD::Zero();
 			for (int idx : neighbors[i]) {
 				//std::cout << delta_positions[i];
+				//if(particles.X(i))
 				
-				
-				 //s_corr = -k * pow( (kernel.Wspiky(particles.X(i) - particles.X(idx))/denom) , n);
-				 //if (neighbors[i].size() < 15) {
+				/*s_corr = 0;
+				 if (neighbors[i].size() > 10) {
+					 s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom), n);
 					 //std::cout << s_corr << "\n";
-					 //s_corr = 0;
-				 //}
+				 }*/
 				//s_corr = 0;
 				// std::cout << s_corr << "\n";
 				// std::cout << lambda_i[i] + lambda_i[idx] << "\n";
@@ -315,7 +311,6 @@ public:
 		for (int i = 0; i < particles.Size(); i++) {
 			real Ci = (particles.D(i) / density_0) - 1;
 			real sum = 0;//VectorD::Zero();
-			
 			for (int idx2 : neighbors[i]) {
 				if (i != idx2) {
 					sum += pow((kernel.gradientWspiky(particles.X(i)-particles.X(idx2))/density_0).norm(),2);
