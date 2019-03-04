@@ -172,9 +172,12 @@ template<int d> class ParticleFluid
 public:
 	Particles<d> particles;
 	Array<Array<int> > neighbors;
+	
 	Array<VectorD> last_positions;			////temp positions in solver]]
 	Array<VectorD> delta_positions;			////change in positions in solver
 	Array<real> lambda_i;					////array for lambda values
+	Array<VectorD> weight_i;						////weight of the particles
+	
 	SpatialHashing<d> spatial_hashing;
 	
 	Kernel<d> kernel;
@@ -195,7 +198,7 @@ public:
 	real n = 2;
 	real coeff = 0.1;
 	real denom = kernel.Wspiky_scorr(kernel_radius, coeff);
-
+	real XSPH_c = 0.01;
 	////Environment objects
 	Array<ImplicitGeometry<d>* > env_objects;
 
@@ -205,6 +208,7 @@ public:
 		last_positions.resize(particles.Size());
 		delta_positions.resize(particles.Size());
 		lambda_i.resize(particles.Size());
+		weight_i.resize(particles.Size());
 	}
 
 	virtual void Update_Neighbors()
@@ -220,28 +224,34 @@ public:
 		}
 	}
 
-	virtual void Update_Vorticity()
-	{
-		VectorD weight; 
-		VectorD N;
-		VectorD small_n;
-		VectorD v_force;
-
-		for(int i=0; i<particles.Size(); i++) {
-			weight = VectorD::Zero();
-			N = VectorD::Zero();
-			small_n = VectorD::Zero();
-
-			for(int idx : neighbors[i]){
-				weight += (particles.V(i) - particles.V(idx)).cross(kernel.gradientWspiky(particles.X(i) - particles.X(idx)));
+	virtual void Update_Voracity_Force() {
+		for (int i = 0; i < particles.Size(); i++) {
+			particles.F(i)= VectorD::Zero();
+			VectorD n = VectorD::Zero();
+			for (int idx : neighbors[i]) {
+				n += (weight_i[idx]- weight_i[i]).dot(kernel.gradientWspiky(particles.X(i) - particles.X(idx)));
 			}
-
-			N = weight/weight.norm();
-			v_force = N.cross(weight);
-
+			particles.F(i) = 1 * ((n / n.norm()).cross(weight_i[i]));
 		}
-		
 	}
+
+	virtual void Update_Voracity_Weight()
+	{
+		for(int i=0; i<particles.Size(); i++) {
+			weight_i[i] = VectorD::Zero();
+			for(int idx : neighbors[i]){
+				weight_i[i] += (particles.V(i) - particles.V(idx)).cross(kernel.gradientWspiky(particles.X(i) - particles.X(idx)));
+			}
+		}
+	}
+	/*virtual void Update_Viscosity() {
+		for (int i = 0; i < particles.Size(); i++) {
+			particles.V(i) = VectorD::Zero();
+			for (int idx : neighbors[i]) {
+				particles.V(i)+=(particles.V(idx)- particles.V(i)).dot()
+			}
+		}
+	}*/
 
 	virtual void Advance(const real dt)
 	{
@@ -278,6 +288,9 @@ public:
 		//update position and Velocity
 		for (int i = 0; i < particles.Size(); i++) {
 			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
+			//Update_Voracity_Weight();
+			//Update_Voracity_Force();
+			//Update_Viscosity();
 			particles.V(i) = (particles.X(i)-last_positions[i])/ dt;
 			//particles.X(i) = temp_positions[i];
 		}
