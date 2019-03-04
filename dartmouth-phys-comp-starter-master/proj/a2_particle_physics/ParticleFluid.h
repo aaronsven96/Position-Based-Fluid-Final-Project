@@ -244,14 +244,16 @@ public:
 			}
 		}
 	}
-	/*virtual void Update_Viscosity() {
+
+	virtual void Update_Viscosity() {
 		for (int i = 0; i < particles.Size(); i++) {
-			particles.V(i) = VectorD::Zero();
+			VectorD gradV = VectorD::Zero();
 			for (int idx : neighbors[i]) {
-				particles.V(i)+=(particles.V(idx)- particles.V(i)).dot()
+				gradV += (particles.V(idx) - particles.V(i))*kernel.Wspiky(particles.X(i)-particles.X(idx));
 			}
+			particles.V(i) = particles.V(i) + XSPH_c * gradV;
 		}
-	}*/
+	}
 
 	virtual void Advance(const real dt)
 	{
