@@ -21,7 +21,7 @@ int main(int argc,char* argv[])
 		driver.Run();	
 	}break;
 	case 2:{
-		ParticleFluidDriver<2> driver;
+		ParticleFluidDriver<3> driver;
 		driver.Initialize();
 		driver.Run();		
 	}break;
