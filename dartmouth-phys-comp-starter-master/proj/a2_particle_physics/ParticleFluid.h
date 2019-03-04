@@ -11,6 +11,7 @@
 #include "ImplicitGeometry.h"
 #include "Math.h"
 
+// offline - record positions of particles 
 
 //////////////////////////////////////////////////////////////////////////
 ////Kernel function
@@ -98,6 +99,13 @@ template<> struct hash<Vector2i>
 	{result_type const h1(std::hash<int>()(arg[0]));result_type const h2(std::hash<int>()(arg[1]));return h1^(h2<<1);}
 };}
 
+namespace std{
+template<> struct hash<Vector3i>
+{typedef Vector3i argument_type;typedef std::size_t result_type;
+	result_type operator()(argument_type const& arg) const
+	{result_type const h1(std::hash<int>()(arg[0]));result_type const h2(std::hash<int>()(arg[1]));result_type const h3(std::hash<int>()(arg[2]));return h1^(h2<<1)^h3;}
+};}
+
 template<int d> class SpatialHashing
 {using VectorD=Vector<real,d>;using VectorDi=Vector<int,d>;
 public:
@@ -183,8 +191,8 @@ public:
 	real relax = .5;
 
 	////values used in scorr 
-	real k = 0.1;
-	real n = 4;
+	real k = 0.01;
+	real n = 2;
 	real coeff = 0.1;
 	real denom = kernel.Wspiky_scorr(kernel_radius, coeff);
 
@@ -213,8 +221,8 @@ public:
 	}
 
 	virtual void Update_Vorticity()
-	{/*
-		VectorD weight;
+	{
+		VectorD weight; 
 		VectorD N;
 		VectorD small_n;
 		VectorD v_force;
@@ -232,7 +240,7 @@ public:
 			v_force = N.cross(weight);
 
 		}
-		*/
+		
 	}
 
 	virtual void Advance(const real dt)
@@ -292,11 +300,11 @@ public:
 				//std::cout << delta_positions[i];
 				//if(particles.X(i))
 				
-				/*s_corr = 0;
-				 if (neighbors[i].size() > 10) {
+				s_corr = 0;
+				//  if (neighbors[i].size() > 10) {
 					 s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom), n);
 					 //std::cout << s_corr << "\n";
-				 }*/
+				//  }
 				//s_corr = 0;
 				// std::cout << s_corr << "\n";
 				// std::cout << lambda_i[i] + lambda_i[idx] << "\n";

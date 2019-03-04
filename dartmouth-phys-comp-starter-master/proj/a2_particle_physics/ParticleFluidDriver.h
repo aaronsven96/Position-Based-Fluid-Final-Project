@@ -14,6 +14,9 @@
 #include "OpenGLViewer.h"
 #include "ParticleFluid.h"
 
+// download bunny mesh, put particles in the mesh, and make radius large enough - create another particle system
+// treat in particle particle collision detection
+
 template<int d> class ParticleFluidDriver : public Driver, public OpenGLViewer
 {using VectorD=Vector<real,d>;using VectorDi=Vector<int,d>;using Base=Driver;
 	real dt=.02;
@@ -27,7 +30,7 @@ public:
 		////driver initialization, initialize simulation data
 		real dx=.35;int nx=20;int ny=20;
 		for(int i=0;i<nx;i++){for(int j=0;j<ny;j++){
-			VectorD pos;pos[0]=(real)i*dx-1.;pos[1]=(real)j*dx+3.;
+			VectorD pos;pos[0]=(real)i*dx-1.;pos[1]=(real)j*dx+3.;pos[2]=.1*pos[1];
 			Add_Particle(pos);}}
 
 		bowl=new Bowl<d>(VectorD::Unit(1)*8,8);
