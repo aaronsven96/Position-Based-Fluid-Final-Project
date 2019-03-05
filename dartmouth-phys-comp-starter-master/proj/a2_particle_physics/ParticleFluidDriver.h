@@ -24,6 +24,8 @@ template<int d> class ParticleFluidDriver : public Driver, public OpenGLViewer
 	Array<OpenGLSolidCircle*> opengl_circles;
 
 	Bowl<d>* bowl=nullptr;
+	Sphere<d>* sphere= nullptr;
+
 public:
 	virtual void Initialize()
 	{
@@ -34,7 +36,9 @@ public:
 			Add_Particle(pos);}}
 
 		bowl=new Bowl<d>(VectorD::Unit(1)*8,8);
+		sphere = new Sphere<d>(VectorD::Unit(1), 2);
 		fluid.env_objects.push_back(bowl);
+		fluid.env_objects.push_back(sphere);
 
 		fluid.Initialize();
 
@@ -81,17 +85,29 @@ public:
 	}
 
 	////User interaction
-// 	virtual bool Mouse_Click(int left,int right,int mid,int x,int y,int w,int h)
-// 	{
-// 		if(left!=1){return false;}
-// 		Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
-// 		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
-// 		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
-// 		real r=.1*static_cast<float>(rand()%1000)/1000.+.15;
-// 		Add_Particle(p_pos);
-// 		Add_Solid_Circle(fluid.particles.Size()-1);
-// 		return true;
-// 	}
+ 	virtual bool Mouse_Click(int left,int right,int mid,int x,int y,int w,int h)
+ 	{
+ 		if(left!=1){return false;}
+		Vector3f win_pos = opengl_window->Project(Vector3f::Zero());
+		Vector3f pos = opengl_window->Unproject(Vector3f((float)x, (float)y, win_pos[2]));
+		VectorD p_pos; for (int i = 0; i < d; i++)p_pos[i] = (real)pos[i];
+		sphere->center = p_pos;
+		return true;
+		/*Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
+ 		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
+ 		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
+ 		real r=.1*static_cast<float>(rand()%1000)/1000.+.15;
+ 		Add_Particle(p_pos);
+ 		Add_Solid_Circle(fluid.particles.Size()-1);
+ 		return true;*/
+ 	}
+	/*virtual bool Mouse_Drag(int x, int y, int w, int h) { 
+		Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
+ 		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
+ 		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
+		sphere->center = p_pos;
+		return true; 
+	}*/
 
 protected:
 	void Add_Particle(VectorD pos,real m=1.)

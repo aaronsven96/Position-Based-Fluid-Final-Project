@@ -213,10 +213,6 @@ public:
 	{
 		
 		kernel.Precompute_Coefs(kernel_radius);
-		last_positions.resize(particles.Size());
-		delta_positions.resize(particles.Size());
-		lambda_i.resize(particles.Size());
-		weight_i.resize(particles.Size());
 		denom_coef =kernel.Wspiky_scorr(kernel_radius, coeff);
 	}
 
@@ -267,9 +263,17 @@ public:
 
 	virtual void Advance(const real dt)
 	{
+		
+		last_positions.resize(particles.Size());
+		delta_positions.resize(particles.Size());
+		lambda_i.resize(particles.Size());
+		weight_i.resize(particles.Size());
+		
 		for(int i=0;i<particles.Size();i++){
 			particles.F(i)=VectorD::Zero();}
 		
+
+
 		Update_Body_Force();
 		Update_Boundary_Collision_Force();
 		
@@ -381,7 +385,9 @@ public:
 		for(int i=0;i<particles.Size();i++){
 			particles.F(i)+=particles.D(i)*g;}	
 	}
+	void Check_Boundary_Conditions() {
 
+	}
 	void Update_Boundary_Collision_Force()
 	{
 		for(int i=0;i<particles.Size();i++){
@@ -389,7 +395,16 @@ public:
 				real phi=env_objects[j]->Phi(particles.X(i));
 				if(phi<particles.R(i)){
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
-					particles.F(i)+=normal*kd*(particles.R(i)-phi)*particles.D(i);}}}
+					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
+					std::cout << force;
+					
+					if (force.norm()>500) {
+						force=(force/force.norm())*500;
+					}
+					particles.F(i) += force;
+				}
+			}
+		}
 	}
 };
 
