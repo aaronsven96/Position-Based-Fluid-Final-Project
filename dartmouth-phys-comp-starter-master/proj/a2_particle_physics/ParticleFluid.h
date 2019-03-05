@@ -92,18 +92,22 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 ////Spatial hashing
+
+namespace std {
+	template<> struct hash<Vector3i>
+	{
+		typedef Vector3i argument_type; typedef std::size_t result_type;
+		result_type operator()(argument_type const& arg) const
+		{
+			result_type const h1(std::hash<int>()(arg[0])); result_type const h2(std::hash<int>()(arg[1])); result_type const h3(std::hash<int>()(arg[2])); return h1 ^ (h2 << 1) ^ h3;
+		}
+	};
+}
 namespace std{
 template<> struct hash<Vector2i>
 {typedef Vector2i argument_type;typedef std::size_t result_type;
 	result_type operator()(argument_type const& arg) const
 	{result_type const h1(std::hash<int>()(arg[0]));result_type const h2(std::hash<int>()(arg[1]));return h1^(h2<<1);}
-};}
-
-namespace std{
-template<> struct hash<Vector3i>
-{typedef Vector3i argument_type;typedef std::size_t result_type;
-	result_type operator()(argument_type const& arg) const
-	{result_type const h1(std::hash<int>()(arg[0]));result_type const h2(std::hash<int>()(arg[1]));result_type const h3(std::hash<int>()(arg[2]));return h1^(h2<<1)^h3;}
 };}
 
 template<int d> class SpatialHashing
@@ -224,7 +228,7 @@ public:
 		}
 	}
 
-	virtual void Update_Voracity_Force() {
+	/*virtual void Update_Voracity_Force() {
 		for (int i = 0; i < particles.Size(); i++) {
 			particles.F(i)= VectorD::Zero();
 			VectorD n = VectorD::Zero();
@@ -233,9 +237,9 @@ public:
 			}
 			particles.F(i) = 1 * ((n / n.norm()).cross(weight_i[i]));
 		}
-	}
+	}*/
 
-	virtual void Update_Voracity_Weight()
+	/*virtual void Update_Voracity_Weight()
 	{
 		for(int i=0; i<particles.Size(); i++) {
 			weight_i[i] = VectorD::Zero();
@@ -243,7 +247,7 @@ public:
 				weight_i[i] += (particles.V(i) - particles.V(idx)).cross(kernel.gradientWspiky(particles.X(i) - particles.X(idx)));
 			}
 		}
-	}
+	}*/
 
 	virtual void Update_Viscosity() {
 		for (int i = 0; i < particles.Size(); i++) {
