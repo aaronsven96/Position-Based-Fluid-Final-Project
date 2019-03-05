@@ -34,6 +34,7 @@ public:
 	{
 		h=_h;
 		coef_1poly6 = pow(h, 6);
+		coef_h2 = pow(h, 2);
 		coef_Wspiky=15.0/(pi*coef_1poly6);
 		coef_dWspiky=-45.0/(pi*coef_1poly6);
 		coef_Wvis=2*pi*pow(h,3);
@@ -46,7 +47,7 @@ public:
 	////Kernel Poly6
 	real Poly6(const VectorD& xji) {
 		real r=xji.norm();
-		if (r >= 0 && r <= h) { return (coef_9poly6 * pow(pow(h, 2)-pow(r, 2), 3)); }//return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
+		if (r >= 0 && r <= h) { return (coef_9poly6 * pow(coef_h2 -pow(r, 2), 3)); }//return (coef_1poly6-coef_1poly4*pow(r,2)+coef_1poly2*pow(r,4)-pow(r,6)); }
 		else { return 0; }
 	}
 
@@ -60,20 +61,20 @@ public:
 	real Wspiky(const VectorD& xji)
 	{
 		real r=xji.norm();
-		if(r>=0&&r<=h){return 15.0/(pi*pow(h,6))*pow(h-r,3);}
+		if(r>=0&&r<=h){return coef_Wspiky *pow(h-r,3);}
 		else{return 0;}
 	}
 
 	real Wspiky_scorr(real h, real coeff)
 	{
 		real r=coeff*h;
-		if(r>=0&&r<=h){return 15.0/(pi*pow(h,6))*pow(h-r,3);}
+		if(r>=0&&r<=h){return coef_Wspiky *pow(h-r,3);}
 		else{return 0;}
 	}
 
 	VectorD gradientWspiky(const VectorD& v){
 		real r=v.norm();
-		if(r<= h&&r>0){return -45.0/(pi*pow(h,6))*pow(h-r,2)*v/r;}
+		if(r<= h&&r>0){return coef_dWspiky *pow(h-r,2)*v/r;}
 		else{return VectorD::Zero();}
 	}
 
