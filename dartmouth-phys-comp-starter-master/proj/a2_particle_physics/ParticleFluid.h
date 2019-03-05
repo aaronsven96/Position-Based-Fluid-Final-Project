@@ -21,6 +21,7 @@ public:
 	////precomputed coefs;
 	real h;
 	real coef_Wspiky;
+	real coef_h2;
 	real coef_dWspiky;
 	real coef_Wvis;
 	real coef_d2Wvis;
@@ -200,24 +201,28 @@ public:
 
 	////values used in scorr 
 	real k = 0.01;
-	real n = 2;
+	real n = 1;
 	real coeff = 0.1;
-	real denom = kernel.Wspiky_scorr(kernel_radius, coeff);
+	
+	real denom_coef;
 	real XSPH_c = 0.01;
 	////Environment objects
 	Array<ImplicitGeometry<d>* > env_objects;
 
 	virtual void Initialize()
 	{
+		
 		kernel.Precompute_Coefs(kernel_radius);
 		last_positions.resize(particles.Size());
 		delta_positions.resize(particles.Size());
 		lambda_i.resize(particles.Size());
 		weight_i.resize(particles.Size());
+		denom_coef =kernel.Wspiky_scorr(kernel_radius, coeff);
 	}
 
 	virtual void Update_Neighbors()
 	{
+		
 		spatial_hashing.Clear_Voxels();
 		spatial_hashing.Update_Voxels(particles.XRef());
 
@@ -310,10 +315,9 @@ public:
 	void Update_Postion_Change() {
 		
 		// delta_q.resize(particles.X(i);
-		// denom = kernel.Poly6_scorr(kernel_radius); 
+		//real denom = kernel.Poly6_scorr(kernel_radius); 
 		// delta_q(2) = 0.3*kernel_radius;
 		real s_corr = 0;
-
 		for (int i = 0; i < particles.Size(); i++) {
 			delta_positions[i] = VectorD::Zero();
 			for (int idx : neighbors[i]) {
@@ -322,12 +326,13 @@ public:
 				
 				s_corr = 0;
 				//  if (neighbors[i].size() > 10) {
-					 s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom), n);
-					 //std::cout << s_corr << "\n";
+				s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n);
+
+				//std::cout << s_corr << "\n";
 				//  }
 				//s_corr = 0;
 				// std::cout << s_corr << "\n";
-				// std::cout << lambda_i[i] + lambda_i[idx] << "\n";
+				//std::cout << lambda_i[i] + lambda_i[idx] << "\n";
 				
 				delta_positions[i] += (lambda_i[i] + lambda_i[idx] + s_corr) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));	
 			}

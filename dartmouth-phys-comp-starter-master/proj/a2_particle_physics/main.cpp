@@ -4,7 +4,6 @@
 // Contact: Bo Zhu (bo.zhu@dartmouth.edu)
 //#####################################################################
 #include <iostream>
-#include "ParticleSandDriver.h"
 #include "ParticleFluidDriver.h"
 
 #ifndef __Main_cpp__
@@ -12,11 +11,11 @@
 
 int main(int argc,char* argv[])
 {
-	int driver=2;
+	int driver=1;
 
 	switch(driver){
 	case 1:{
-		ParticleSandDriver<2> driver;
+		ParticleFluidDriver<2> driver;
 		driver.Initialize();
 		driver.Run();	
 	}break;
