@@ -278,12 +278,20 @@ public:
 		Update_Boundary_Collision_Force();
 		
 		
+		for (int i = 0; i < particles.Size(); i++) {
+			particles.V(i) += particles.F(i) *dt;
+			//std::cout << particles.V(i).norm() << "\n";
+		}
+
+		Check_Boundary_Conditions();
 		//predict postitions
+
 		for (int i = 0; i < particles.Size(); i++) {
 			particles.V(i) += particles.F(i) *dt;
 			for(int j=0;j<d;j++){
 				last_positions[i][j] = particles.X(i)[j];
 			}
+
 			//if(i==1)std::cout << "Before change x:" << last_positions[i][1] << " Before chnage x:" << particles.X(i)[1] << "\n";
 			particles.X(i) = last_positions[i] + particles.V(i)*dt;
 			//if(i==1)std::cout << "before x:" << last_positions[i][1] << " After x:" << particles.X(i)[1] << "\n";
@@ -386,7 +394,13 @@ public:
 			particles.F(i)+=particles.D(i)*g;}	
 	}
 	void Check_Boundary_Conditions() {
-
+		for (int i = 0; i < particles.Size(); i++) {
+			VectorD velocity = particles.V(i);
+			if (velocity.norm() > 30) {
+				particles.V(i) = (velocity / velocity.norm()) * 3;
+			}
+		}
+		
 	}
 	void Update_Boundary_Collision_Force()
 	{
@@ -396,11 +410,7 @@ public:
 				if(phi<particles.R(i)){
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
 					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
-					std::cout << force;
-					
-					if (force.norm()>500) {
-						force=(force/force.norm())*500;
-					}
+					//d::cout << force;
 					particles.F(i) += force;
 				}
 			}
