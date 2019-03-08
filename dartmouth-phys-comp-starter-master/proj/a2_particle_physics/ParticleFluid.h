@@ -413,7 +413,7 @@ public:
 			for(int j=0;j<env_objects.size();j++){
 				real phi=env_objects[j]->Phi(particles.X(i));
 				if(phi<particles.R(i)){
-					std::cout<<phi<<"\n";
+					// std::cout<<phi<<"\n";
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
 					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
 				}

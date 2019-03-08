@@ -11,7 +11,7 @@
 #include "OpenGLMarkerObjects.h"
 #include "OpenGLCommon.h"
 #include "OpenGLWindow.h"
-#include "OpenGLViewer.h"
+#include "OpenGLViewer.h" 
 #include "ParticleFluid.h"
 #include "OpenGLMarkerObjects.h"
 #include "OpenGLParticles.h"
@@ -24,7 +24,7 @@ template<int d> class ParticleFluidDriver : public Driver, public OpenGLViewer
 	real dt=.02;
 	ParticleFluid<d> fluid;
 	Array<OpenGLSolidCircle*> opengl_circles;
-	Array<OpenGLSphere*> opengl_spheres;								////spheres
+	// Array<OpenGLSphere*> opengl_spheres;								////spheres
 
 	Bowl<d>* bowl=nullptr;
 	Sphere<d>* sphere= nullptr;
@@ -76,30 +76,30 @@ public:
 			opengl_circle->Initialize();
 		}
 
-		// for(int i=0;i<fluid.particles.Size();i++){
-		// 	Add_Solid_Circle(i);}
-
 		for(int i=0;i<fluid.particles.Size();i++){
-			OpenGLSphere* opengl_sphere=Add_Interactive_Object<OpenGLSphere>();
-			opengl_sphere->pos=Vector3::Unit(0)*((real).5*(real)i+(real)2);
-			opengl_sphere->radius=(real).02;
-			Set_Color(opengl_sphere,OpenGLColor(.0+.5*(real)i,1.,.0,1.));
-			opengl_sphere->Set_Data_Refreshed();
-			opengl_sphere->Initialize();
-			opengl_spheres.push_back(opengl_sphere);}
+			Add_Solid_Circle(i);}
+
+		// for(int i=0;i<fluid.particles.Size();i++){
+		// 	OpenGLSphere* opengl_sphere=Add_Interactive_Object<OpenGLSphere>();
+		// 	opengl_sphere->pos=Vector3::Unit(0)*((real).5*(real)i+(real)2);
+		// 	opengl_sphere->radius=(real).02;
+		// 	Set_Color(opengl_sphere,OpenGLColor(.0+.5*(real)i,1.,.0,1.));
+		// 	opengl_sphere->Set_Data_Refreshed();
+		// 	opengl_sphere->Initialize();
+		// 	opengl_spheres.push_back(opengl_sphere);}
 	}
 
 	void Sync_Simulation_And_Visualization_Data()
 	{
-		// for(int i=0;i<fluid.particles.Size();i++){
-		// 	auto opengl_circle=opengl_circles[i];
-		// 	opengl_circle->pos=V3(fluid.particles.X(i));
-		// 	opengl_circle->Set_Data_Refreshed();}
+		for(int i=0;i<fluid.particles.Size();i++){
+			auto opengl_circle=opengl_circles[i];
+			opengl_circle->pos=V3(fluid.particles.X(i));
+			opengl_circle->Set_Data_Refreshed();}
 		
-		////update and sync data for spheres
-		for(int i=0;i<opengl_spheres.size();i++){
-			opengl_spheres[i]->pos+=Vector3::Unit(1)*.1;
-			opengl_spheres[i]->Set_Data_Refreshed();}
+		// ////update and sync data for spheres
+		// for(int i=0;i<opengl_spheres.size();i++){
+		// 	opengl_spheres[i]->pos+=Vector3::Unit(1)*.1;
+		// 	opengl_spheres[i]->Set_Data_Refreshed();}
 	}
 
 	////update simulation and visualization for each time step
