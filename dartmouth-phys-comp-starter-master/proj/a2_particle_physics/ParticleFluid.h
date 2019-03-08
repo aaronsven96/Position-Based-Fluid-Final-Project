@@ -211,7 +211,9 @@ public:
 
 	virtual void Initialize()
 	{
-		
+		if (d == 2) {
+			density_0 = 10;
+		}
 		kernel.Precompute_Coefs(kernel_radius);
 		denom_coef =kernel.Wspiky_scorr(kernel_radius, coeff);
 	}
@@ -284,8 +286,8 @@ public:
 		}
 
 		Check_Boundary_Conditions();
-		//predict postitions
 
+		//predict postitions
 		for (int i = 0; i < particles.Size(); i++) {
 			particles.V(i) += particles.F(i) *dt;
 			for(int j=0;j<d;j++){
@@ -334,7 +336,8 @@ public:
 				//std::cout << delta_positions[i];
 				//if(particles.X(i))
 				
-				s_corr = 0;
+				//s_corr = 0;
+				s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n);
 				// if (neighbors[i].size() <12) {
 				// 	// std::cout<<neighbors[i].size()<<"\n";
 				// real fract = (kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef);
@@ -407,15 +410,16 @@ public:
 		}
 		
 	}
+
 	void Update_Boundary_Collision_Force()
 	{
 		for(int i=0;i<particles.Size();i++){
 			for(int j=0;j<env_objects.size();j++){
 				real phi=env_objects[j]->Phi(particles.X(i));
 				if(phi<particles.R(i)){
-					std::cout<<phi<<"\n";
+					//std::cout<<phi<<"\n";
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
-					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
+					particles.F(i)+= normal * kd*(particles.R(i) - phi)*particles.D(i);
 				}
 			}
 		}

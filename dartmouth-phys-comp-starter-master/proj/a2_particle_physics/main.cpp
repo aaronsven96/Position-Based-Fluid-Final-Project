@@ -5,6 +5,7 @@
 //#####################################################################
 #include <iostream>
 #include "ParticleFluidDriver.h"
+#include "ParticleFluidDriver2D.h"
 
 #ifndef __Main_cpp__
 #define __Main_cpp__
@@ -12,11 +13,11 @@
 int main(int argc,char* argv[])
 {
 
-	int driver=2;
+	int driver=1;
 	
 	switch(driver){
 	case 1:{
-		ParticleFluidDriver<2> driver;
+		ParticleFluidDriver2D<2> driver;
 		driver.Initialize();
 		driver.Run();	
 	}break;
