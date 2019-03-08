@@ -416,18 +416,6 @@ public:
 					std::cout<<phi<<"\n";
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
 					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
-<<<<<<< Updated upstream
-=======
-					
-					
-					// if (phi<-0.5) {
-					// 	// std::cout << force;
-
-					// 	// force=(force/force.norm())*10;
-					// 	force= normal * kd*(particles.R(i) - 0.5)*20;
-					// }
-					particles.F(i) += force;
->>>>>>> Stashed changes
 				}
 			}
 		}
