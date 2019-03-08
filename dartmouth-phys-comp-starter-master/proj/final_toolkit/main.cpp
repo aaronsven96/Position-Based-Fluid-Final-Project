@@ -4,27 +4,24 @@
 // Contact: Bo Zhu (bo.zhu@dartmouth.edu)
 //#####################################################################
 #include <iostream>
-#include "ParticleFluidDriver.h"
+#include "GridFluid.h"
+#include "ToolkitDriver.h"
 
 #ifndef __Main_cpp__
 #define __Main_cpp__
 
 int main(int argc,char* argv[])
 {
-	int driver=2;
+	int driver=1;
 
 	switch(driver){
 	case 1:{
-		ParticleFluidDriver<2> driver;
+		ToolkitDriver<3> driver;
 		driver.Initialize();
 		driver.Run();	
 	}break;
-	case 2:{
-		ParticleFluidDriver<3> driver;
-		driver.Initialize();
-		driver.Run();		
-	}break;
 	}
+	
 }
 
 #endif

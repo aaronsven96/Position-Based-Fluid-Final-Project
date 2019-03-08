@@ -190,14 +190,14 @@ public:
 	int solver_iterations = 15;				////solver iterations
 	real kernel_radius=(real).8;			////kernel radius
 	real pressure_density_coef=(real)1e1;	////pressure-density-relation coefficient, used in Update_Pressure()
-	real density_0=(real)10.;				////rest density, used in Update_Pressure()
-	real viscosity_coef=(real)1e1;			////viscosity coefficient, used in Update_Viscosity_Force()
+	real density_0=(real)20.;				////rest density, used in Update_Pressure()
+	real viscosity_coef=(real)5;		////viscosity coefficient, used in Update_Viscosity_Force()
 	real kd=(real)1e2;						////stiffness for environmental collision response
 	VectorD g=VectorD::Unit(1)*(real)-1.;	////gravity
 	
 	////realx coef
 	
-	real relax = .5;
+	real relax = 1;
 
 	////values used in scorr 
 	real k = 0.01;
@@ -314,7 +314,7 @@ public:
 			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
 			//Update_Voracity_Weight();
 			//Update_Voracity_Force();
-			//Update_Viscosity();
+			// Update_Viscosity();
 			particles.V(i) = (particles.X(i)-last_positions[i])/ dt;
 			//particles.X(i) = temp_positions[i];
 		}
@@ -337,11 +337,18 @@ public:
 				//if(particles.X(i))
 				
 				s_corr = 0;
-				//  if (neighbors[i].size() > 10) {
-				s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n);
+				// if (neighbors[i].size() <12) {
+				// 	// std::cout<<neighbors[i].size()<<"\n";
+				// real fract = (kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef);
+				// s_corr = -k * pow(fract, n);
+				// // if (fract>1){
+				// // 	// std::cout<<fract;
+				// // 	s_corr = -k*fract;
+				// // 	}
+				
 
-				//std::cout << s_corr << "\n";
-				//  }
+				// // //std::cout << s_corr << "\n";
+				// }
 				//s_corr = 0;
 				// std::cout << s_corr << "\n";
 				//std::cout << lambda_i[i] + lambda_i[idx] << "\n";
@@ -408,9 +415,21 @@ public:
 			for(int j=0;j<env_objects.size();j++){
 				real phi=env_objects[j]->Phi(particles.X(i));
 				if(phi<particles.R(i)){
+					std::cout<<phi<<"\n";
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
 					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
+<<<<<<< Updated upstream
 					//d::cout << force;
+=======
+					
+					
+					// if (phi<-0.5) {
+					// 	// std::cout << force;
+
+					// 	// force=(force/force.norm())*10;
+					// 	force= normal * kd*(particles.R(i) - 0.5)*20;
+					// }
+>>>>>>> Stashed changes
 					particles.F(i) += force;
 				}
 			}

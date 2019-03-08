@@ -30,10 +30,12 @@ public:
 	virtual void Initialize()
 	{
 		////driver initialization, initialize simulation data
-		real dx=.35;int nx=20;int ny=20;
-		for(int i=0;i<nx;i++){for(int j=0;j<ny;j++){
-			VectorD pos;pos[0]=(real)i*dx-1.;pos[1]=(real)j*dx+3.;pos[2]=.1*pos[1];
-			Add_Particle(pos);}}
+		real dx=.35;int nx=7;int ny=7;int nz=7;
+		for(int i=0;i<nx;i++){
+			for(int j=0;j<ny;j++){
+				for(int k=0;k<nz;k++){
+					VectorD pos;pos[0]=(real)i*dx-1.;pos[1]=(real)j*dx+3.;pos[2]=k*dx-1.;
+					Add_Particle(pos);}}}
 
 		bowl=new Bowl<d>(VectorD::Unit(1)*8,8);
 		sphere = new Sphere<d>(VectorD::Unit(1), 2);
@@ -57,7 +59,19 @@ public:
 			opengl_circle->color=OpenGLColor(1.f,.6f,.2f);
 			opengl_circle->line_width=4.f;
 			opengl_circle->Set_Data_Refreshed();
-			opengl_circle->Initialize();}
+			opengl_circle->Initialize();
+		}
+
+		if(sphere){
+			auto opengl_circle=Add_Interactive_Object<OpenGLCircle>();
+			opengl_circle->n=64;
+			opengl_circle->pos=V3(sphere->center);
+			opengl_circle->radius=sphere->radius;
+			opengl_circle->color=OpenGLColor(1.f,.6f,.2f);
+			opengl_circle->line_width=4.f;
+			opengl_circle->Set_Data_Refreshed();
+			opengl_circle->Initialize();
+		}
 
 		for(int i=0;i<fluid.particles.Size();i++){
 			Add_Solid_Circle(i);}
@@ -85,22 +99,22 @@ public:
 	}
 
 	////User interaction
- 	virtual bool Mouse_Click(int left,int right,int mid,int x,int y,int w,int h)
- 	{
- 		if(left!=1){return false;}
-		Vector3f win_pos = opengl_window->Project(Vector3f::Zero());
-		Vector3f pos = opengl_window->Unproject(Vector3f((float)x, (float)y, win_pos[2]));
-		VectorD p_pos; for (int i = 0; i < d; i++)p_pos[i] = (real)pos[i];
-		sphere->center = p_pos;
-		return true;
-		/*Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
- 		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
- 		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
- 		real r=.1*static_cast<float>(rand()%1000)/1000.+.15;
- 		Add_Particle(p_pos);
- 		Add_Solid_Circle(fluid.particles.Size()-1);
- 		return true;*/
- 	}
+ 	// virtual bool Mouse_Click(int left,int right,int mid,int x,int y,int w,int h)
+ 	// {
+ 	// 	if(left!=1){return false;}
+	// 	Vector3f win_pos = opengl_window->Project(Vector3f::Zero());
+	// 	Vector3f pos = opengl_window->Unproject(Vector3f((float)x, (float)y, win_pos[2]));
+	// 	VectorD p_pos; for (int i = 0; i < d; i++)p_pos[i] = (real)pos[i];
+	// 	sphere->center = p_pos;
+	// 	return true;
+	// 	/*Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
+ 	// 	Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
+ 	// 	VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
+ 	// 	real r=.1*static_cast<float>(rand()%1000)/1000.+.15;
+ 	// 	Add_Particle(p_pos);
+ 	// 	Add_Solid_Circle(fluid.particles.Size()-1);
+ 	// 	return true;*/
+ 	// }
 	/*virtual bool Mouse_Drag(int x, int y, int w, int h) { 
 		Vector3f win_pos=opengl_window->Project(Vector3f::Zero());
  		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
@@ -122,7 +136,9 @@ protected:
 
 	void Add_Solid_Circle(const int i)
 	{
-		OpenGLColor c(0.5f,0.5f,0.5f,1.f);
+		OpenGLColor c;
+		for(int i=0;i<3;i++){
+			c.rgba[i]=static_cast<float>(rand()%1000)/1000.f;}
 		auto opengl_circle=Add_Interactive_Object<OpenGLSolidCircle>();
 		opengl_circles.push_back(opengl_circle);
 		opengl_circle->pos=V3(fluid.particles.X(i));
