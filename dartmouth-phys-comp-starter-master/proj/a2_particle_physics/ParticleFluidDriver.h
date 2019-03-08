@@ -13,6 +13,8 @@
 #include "OpenGLWindow.h"
 #include "OpenGLViewer.h"
 #include "ParticleFluid.h"
+#include "OpenGLMarkerObjects.h"
+#include "OpenGLParticles.h"
 
 // download bunny mesh, put particles in the mesh, and make radius large enough - create another particle system
 // treat in particle particle collision detection
@@ -22,6 +24,7 @@ template<int d> class ParticleFluidDriver : public Driver, public OpenGLViewer
 	real dt=.02;
 	ParticleFluid<d> fluid;
 	Array<OpenGLSolidCircle*> opengl_circles;
+	Array<OpenGLSphere*> opengl_spheres;								////spheres
 
 	Bowl<d>* bowl=nullptr;
 	Sphere<d>* sphere= nullptr;
