@@ -314,9 +314,7 @@ public:
 			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
 			//Update_Voracity_Weight();
 			//Update_Voracity_Force();
-			// Update_Viscosity();
-			particles.V(i) = (particles.X(i)-last_positions[i])/ dt;
-			//particles.X(i) = temp_positions[i];
+			Update_Viscosity();
 		}
 		
 	}
@@ -418,19 +416,6 @@ public:
 					std::cout<<phi<<"\n";
 					VectorD normal=env_objects[j]->Normal(particles.X(i));
 					VectorD force= normal * kd*(particles.R(i) - phi)*particles.D(i);
-<<<<<<< Updated upstream
-					//d::cout << force;
-=======
-					
-					
-					// if (phi<-0.5) {
-					// 	// std::cout << force;
-
-					// 	// force=(force/force.norm())*10;
-					// 	force= normal * kd*(particles.R(i) - 0.5)*20;
-					// }
->>>>>>> Stashed changes
-					particles.F(i) += force;
 				}
 			}
 		}

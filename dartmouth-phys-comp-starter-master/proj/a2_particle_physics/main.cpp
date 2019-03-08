@@ -11,8 +11,9 @@
 
 int main(int argc,char* argv[])
 {
-	int driver=2;
 
+	int driver=2;
+	
 	switch(driver){
 	case 1:{
 		ParticleFluidDriver<2> driver;

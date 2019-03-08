@@ -120,7 +120,7 @@ public:
  		Vector3f pos=opengl_window->Unproject(Vector3f((float)x,(float)y,win_pos[2]));
  		VectorD p_pos;for(int i=0;i<d;i++)p_pos[i]=(real)pos[i];
 		sphere->center = p_pos;
-		return true; 
+		return ztrue; 
 	}*/
 
 protected:
