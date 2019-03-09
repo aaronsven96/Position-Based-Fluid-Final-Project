@@ -184,6 +184,11 @@ public:
 	Array<real> lambda_i;					////array for lambda values
 	Array<VectorD> weight_i;						////weight of the particles
 	
+	//User Interaction
+	Array<VectorD> flow_direction;
+	bool is_flow = false;
+	Array<ImplicitGeometry<d>* > flow_objects;
+
 	SpatialHashing<d> spatial_hashing;
 	
 	Kernel<d> kernel;
@@ -199,6 +204,9 @@ public:
 	
 	real relax = 1;
 
+	//// Max Vel
+	real velocity_max = 100;
+
 	////values used in scorr 
 	real k = 0.01;
 	real n = 1;
@@ -206,6 +214,7 @@ public:
 	
 	real denom_coef;
 	real XSPH_c = 0.01;
+	
 	////Environment objects
 	Array<ImplicitGeometry<d>* > env_objects;
 
@@ -214,6 +223,7 @@ public:
 		if (d == 2) {
 			density_0 = 10;
 		}
+
 		kernel.Precompute_Coefs(kernel_radius);
 		denom_coef =kernel.Wspiky_scorr(kernel_radius, coeff);
 	}
@@ -263,6 +273,17 @@ public:
 		}
 	}
 
+	virtual void Update_Flow_Velocity() {
+		for (int i = 0; i < particles.Size(); i++) {
+			for (int j = 0; j<flow_objects.size(); j++) {
+				real phi = flow_objects[j]->Phi(particles.X(i));
+				if (phi < particles.R(i)) {
+					particles.V(i) += flow_direction[j];
+				}
+			}
+		}
+	}
+
 	virtual void Advance(const real dt)
 	{
 		
@@ -273,27 +294,25 @@ public:
 		
 		for(int i=0;i<particles.Size();i++){
 			particles.F(i)=VectorD::Zero();}
-		
 
 
 		Update_Body_Force();
 		Update_Boundary_Collision_Force();
 		
-		
-		for (int i = 0; i < particles.Size(); i++) {
-			particles.V(i) += particles.F(i) *dt;
-			//std::cout << particles.V(i).norm() << "\n";
-		}
-
-		Check_Boundary_Conditions();
 
 		//predict postitions
 		for (int i = 0; i < particles.Size(); i++) {
 			particles.V(i) += particles.F(i) *dt;
-			for(int j=0;j<d;j++){
+		}
+		
+		if(is_flow){ Update_Flow_Velocity(); }
+		
+		Check_Boundary_Conditions();
+
+		for (int i = 0; i < particles.Size(); i++) {
+			for (int j = 0; j < d; j++) {
 				last_positions[i][j] = particles.X(i)[j];
 			}
-
 			//if(i==1)std::cout << "Before change x:" << last_positions[i][1] << " Before chnage x:" << particles.X(i)[1] << "\n";
 			particles.X(i) = last_positions[i] + particles.V(i)*dt;
 			//if(i==1)std::cout << "before x:" << last_positions[i][1] << " After x:" << particles.X(i)[1] << "\n";
@@ -314,11 +333,11 @@ public:
 		//update position and Velocity
 		for (int i = 0; i < particles.Size(); i++) {
 			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
+			particles.V(i) = (particles.X(i) - last_positions[i]) / dt;
 			//Update_Voracity_Weight();
 			//Update_Voracity_Force();
-			Update_Viscosity();
 		}
-		
+		Update_Viscosity();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -404,8 +423,8 @@ public:
 	void Check_Boundary_Conditions() {
 		for (int i = 0; i < particles.Size(); i++) {
 			VectorD velocity = particles.V(i);
-			if (velocity.norm() > 30) {
-				particles.V(i) = (velocity / velocity.norm()) * 3;
+			if (velocity.norm() > velocity_max) {
+				particles.V(i) = (velocity / velocity.norm()) * velocity_max;
 			}
 		}
 		
