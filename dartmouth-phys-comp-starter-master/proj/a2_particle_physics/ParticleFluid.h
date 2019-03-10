@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include "Particles.h"
 #include "ImplicitGeometry.h"
-#include "Math.h"
+#include "math.h"
 
 // offline - record positions of particles 
 
