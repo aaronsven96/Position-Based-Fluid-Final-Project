@@ -77,14 +77,12 @@ public:
 		}
 
 		if(sphere){
-			auto opengl_circle=Add_Interactive_Object<OpenGLCircle>();
-			opengl_circle->n=64;
-			opengl_circle->pos=V3(sphere->center);
-			opengl_circle->radius=sphere->radius;
-			opengl_circle->color=OpenGLColor(1.f,.6f,.2f);
-			opengl_circle->line_width=4.f;
-			opengl_circle->Set_Data_Refreshed();
-			opengl_circle->Initialize();
+			OpenGLSphere* opengl_sphere=Add_Interactive_Object<OpenGLSphere>();
+			Set_Color(opengl_sphere,OpenGLColor(.0+.05,1.,.0+.05,1.));
+			opengl_sphere->pos=V3(sphere->center);
+			opengl_sphere->radius=sphere->radius;
+			opengl_sphere->Set_Data_Refreshed();
+			opengl_sphere->Initialize();			
 		}
 
 		for(int i=0;i<fluid.particles.Size();i++){
