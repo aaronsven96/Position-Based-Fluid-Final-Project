@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include "Particles.h"
 #include "ImplicitGeometry.h"
-#include "math.h"
+#include "Math.h"
 
 // offline - record positions of particles 
 
@@ -264,20 +264,24 @@ public:
 
 	virtual void Update_Viscosity() {
 		for (int i = 0; i < particles.Size(); i++) {
-			VectorD gradV = VectorD::Zero();
-			for (int idx : neighbors[i]) {
-				gradV += (particles.V(idx) - particles.V(i))*kernel.Wspiky(particles.X(i)-particles.X(idx));
+			if (!is_boundary[i]) {
+				VectorD gradV = VectorD::Zero();
+				for (int idx : neighbors[i]) {
+					gradV += (particles.V(idx) - particles.V(i))*kernel.Wspiky(particles.X(i) - particles.X(idx));
+				}
+				particles.V(i) = particles.V(i) + XSPH_c * gradV;
 			}
-			particles.V(i) = particles.V(i) + XSPH_c * gradV;
 		}
 	}
 
 	virtual void Update_Flow_Velocity() {
 		for (int i = 0; i < particles.Size(); i++) {
-			for (int j = 0; j<flow_objects.size(); j++) {
-				real phi = flow_objects[j]->Phi(particles.X(i));
-				if (phi < particles.R(i)) {
-					particles.V(i) += flow_direction[j];
+			if (!is_boundary[i]) {
+				for (int j = 0; j < flow_objects.size(); j++) {
+					real phi = flow_objects[j]->Phi(particles.X(i));
+					if (phi < particles.R(i)) {
+						particles.V(i) += flow_direction[j];
+					}
 				}
 			}
 		}
@@ -285,7 +289,9 @@ public:
 	virtual void Update_Pressure()
 	{
 		for (int i = 0; i < particles.Size(); i++) {
-			particles.P(i) = (particles.D(i) - density_0) *pressure_density_coef;
+			if (!is_boundary[i]) {
+				particles.P(i) = (particles.D(i) - density_0) *pressure_density_coef;
+			}
 		}
 	}
 	virtual void Update_Boundary_Pressure_Force() {
@@ -302,14 +308,19 @@ public:
 		for (int i = 0; i < particles.Size(); i++) {
 			if (!is_boundary[i]) {
 				for (int idx : neighbors_boundary[i]) {
-					particles.F(i) -= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
+					VectorD force= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
 						kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+					particles.F(i) -= 100 *force;
+					//std::cout << "Force" << force << "\n";
+					/*std::cout << "Bvol" << b_volume[idx] << "\n";
+					std::cout << "Pressure" << particles.P(i) << "\n";
+					std::cout << "Density" << particles.D(i) << "\n";*/
 				}
 			}
 		}
 	}
 
-	virtual void Add_Boundary_Pressure() {
+	virtual void Add_Boundary_Density() {
 		for (int i = 0; i < particles.Size(); i++) {
 			if (!is_boundary[i]) {
 				for (int idx : neighbors_boundary[i]) {
@@ -339,13 +350,23 @@ public:
 		lambda_i.resize(particles.Size());
 		weight_i.resize(particles.Size());
 		
+		Update_Neighbors();
+		
 		for(int i=0;i<particles.Size();i++){
 			particles.F(i)=VectorD::Zero();}
 
 
 		Update_Body_Force();
 		Update_Boundary_Collision_Force();
-		
+
+		//Particle Boundary Collision
+		Update_Density();
+		Update_Boundary_Volume();
+		Add_Boundary_Density();
+		Update_Pressure();
+		Update_Boundary_Pressure_Force();
+		Update_Boundary_Friction_Force();
+
 
 		//predict postitions
 		for (int i = 0; i < particles.Size(); i++) {
@@ -357,11 +378,13 @@ public:
 		Check_Boundary_Conditions();
 
 		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
 			for (int j = 0; j < d; j++) {
 				last_positions[i][j] = particles.X(i)[j];
 			}
 			//if(i==1)std::cout << "Before change x:" << last_positions[i][1] << " Before chnage x:" << particles.X(i)[1] << "\n";
-			particles.X(i) = last_positions[i] + particles.V(i)*dt;
+				particles.X(i) = last_positions[i] + particles.V(i)*dt;
+			}
 			//if(i==1)std::cout << "before x:" << last_positions[i][1] << " After x:" << particles.X(i)[1] << "\n";
 		}
 
@@ -379,10 +402,12 @@ public:
 		
 		//update position and Velocity
 		for (int i = 0; i < particles.Size(); i++) {
-			//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
-			particles.V(i) = (particles.X(i) - last_positions[i]) / dt;
-			//Update_Voracity_Weight();
-			//Update_Voracity_Force();
+			if (!is_boundary[i]) {
+				//std::cout << "x:"<<particles.X(i)[0] << " y:" << particles.X(i)[1]
+				particles.V(i) = (particles.X(i) - last_positions[i]) / dt;
+				//Update_Voracity_Weight();
+				//Update_Voracity_Force();
+			}
 		}
 		Update_Viscosity();
 	}
@@ -397,52 +422,58 @@ public:
 		// delta_q(2) = 0.3*kernel_radius;
 		real s_corr = 0;
 		for (int i = 0; i < particles.Size(); i++) {
-			delta_positions[i] = VectorD::Zero();
-			for (int idx : neighbors[i]) {
-				//std::cout << delta_positions[i];
-				//if(particles.X(i))
-				
-				//s_corr = 0;
-				s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n);
-				// if (neighbors[i].size() <12) {
-				// 	// std::cout<<neighbors[i].size()<<"\n";
-				// real fract = (kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef);
-				// s_corr = -k * pow(fract, n);
-				// // if (fract>1){
-				// // 	// std::cout<<fract;
-				// // 	s_corr = -k*fract;
-				// // 	}
-				
+			if (!is_boundary[i]) {
+				delta_positions[i] = VectorD::Zero();
+				for (int idx : neighbors[i]) {
+					//std::cout << delta_positions[i];
+					//if(particles.X(i))
 
-				// // //std::cout << s_corr << "\n";
-				// }
-				//s_corr = 0;
-				// std::cout << s_corr << "\n";
-				//std::cout << lambda_i[i] + lambda_i[idx] << "\n";
-				
-				delta_positions[i] += (lambda_i[i] + lambda_i[idx] + s_corr) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));	
+					//s_corr = 0;
+					s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n);
+					// if (neighbors[i].size() <12) {
+					// 	// std::cout<<neighbors[i].size()<<"\n";
+					// real fract = (kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef);
+					// s_corr = -k * pow(fract, n);
+					// // if (fract>1){
+					// // 	// std::cout<<fract;
+					// // 	s_corr = -k*fract;
+					// // 	}
+
+
+					// // //std::cout << s_corr << "\n";
+					// }
+					//s_corr = 0;
+					// std::cout << s_corr << "\n";
+					//std::cout << lambda_i[i] + lambda_i[idx] << "\n";
+
+					delta_positions[i] += (lambda_i[i] + lambda_i[idx] + s_corr) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+				}
+				delta_positions[i] = delta_positions[i] / density_0;
+				// std::cout << "x:" << delta_positions[i][0] << " y:" << delta_positions[i][1];
 			}
-			delta_positions[i] = delta_positions[i] / density_0;
-			// std::cout << "x:" << delta_positions[i][0] << " y:" << delta_positions[i][1];
 		}
 	}
 	void Update_Lambda() {
 		for (int i = 0; i < particles.Size(); i++) {
-			real Ci = (particles.D(i) / density_0) - 1;
-			real sum = 0;//VectorD::Zero();
-			for (int idx2 : neighbors[i]) {
-				if (i != idx2) {
-					sum += pow((kernel.gradientWspiky(particles.X(i)-particles.X(idx2))/density_0).norm(),2);
+			if (!is_boundary[i]) {
+				real Ci = (particles.D(i) / density_0) - 1;
+				real sum = 0;//VectorD::Zero();
+				for (int idx2 : neighbors[i]) {
+					if (i != idx2) {
+						sum += pow((kernel.gradientWspiky(particles.X(i) - particles.X(idx2)) / density_0).norm(), 2);
+					}
 				}
+				lambda_i[i] = -1 * (Ci / (sum * 2 + relax));//(sum/density_0));
+				//std::cout << "lambda:" << lambda_i[i] << "  ";
 			}
-			lambda_i[i] = -1 * (Ci / (sum*2 + relax) );//(sum/density_0));
-			//std::cout << "lambda:" << lambda_i[i] << "  ";
 		}
 	}
 
 	void Update_Temp_Position() {
 		for (int i = 0; i < particles.Size(); i++) {
-			particles.X(i) = particles.X(i) + delta_positions[i];
+			if (!is_boundary[i]) {
+				particles.X(i) = particles.X(i) + delta_positions[i];
+			}
 		}
 	}
 
@@ -451,10 +482,11 @@ public:
 		/* Your implementation start */
 		
 		for (int i = 0; i < particles.Size(); i++) {
-			Array<int> cur_neighbors = neighbors[i];
-			particles.D(i) = 0;
-			for (int idx : cur_neighbors) {
-				particles.D(i) += kernel.Poly6(particles.X(idx)-particles.X(i));
+			if (!is_boundary[i]) {
+				particles.D(i) = 0;
+				for (int idx : neighbors[i]) {
+					particles.D(i) += kernel.Poly6(particles.X(idx) - particles.X(i));
+				}
 			}
 		}
 		/* Your implementation end */
@@ -464,8 +496,11 @@ public:
 
 	void Update_Body_Force()
 	{
-		for(int i=0;i<particles.Size();i++){
-			particles.F(i)+=particles.D(i)*g;}	
+		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
+				particles.F(i) += particles.D(i)*g;
+			}
+		}
 	}
 	void Check_Boundary_Conditions() {
 		for (int i = 0; i < particles.Size(); i++) {
@@ -478,13 +513,15 @@ public:
 
 	void Update_Boundary_Collision_Force()
 	{
-		for(int i=0;i<particles.Size();i++){
-			for(int j=0;j<env_objects.size();j++){
-				real phi=env_objects[j]->Phi(particles.X(i));
-				if(phi<particles.R(i)){
-					//std::cout<<phi<<"\n";
-					VectorD normal=env_objects[j]->Normal(particles.X(i));
-					particles.F(i)+= normal * kd*(particles.R(i) - phi)*particles.D(i);
+		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
+				for (int j = 0; j < env_objects.size(); j++) {
+					real phi = env_objects[j]->Phi(particles.X(i));
+					if (phi < particles.R(i)) {
+						//std::cout<<phi<<"\n";
+						VectorD normal = env_objects[j]->Normal(particles.X(i));
+						particles.F(i) += normal * kd*(particles.R(i) - phi)*particles.D(i);
+					}
 				}
 			}
 		}

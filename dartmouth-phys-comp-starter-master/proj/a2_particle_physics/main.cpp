@@ -6,6 +6,7 @@
 #include <iostream>
 #include "ParticleFluidDriver.h"
 #include "ParticleFluidDriver2D.h"
+#include "ParticleFluidDriver2DExtended.h"
 
 #ifndef __Main_cpp__
 #define __Main_cpp__
@@ -13,7 +14,7 @@
 int main(int argc,char* argv[])
 {
 
-	int driver=2;
+	int driver=3;
 	
 	switch(driver){
 	case 1:{
@@ -25,6 +26,11 @@ int main(int argc,char* argv[])
 		ParticleFluidDriver<3> driver;
 		driver.Initialize();
 		driver.Run();		
+	}break;
+	case 3: {
+		ParticleFluidDriver2DExtended<2> driver;
+		driver.Initialize();
+		driver.Run();
 	}break;
 	}
 }
