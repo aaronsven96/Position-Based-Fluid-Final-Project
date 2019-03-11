@@ -28,6 +28,7 @@ template<int d> class ParticleFluidDriver2D : public Driver, public OpenGLViewer
 	bool collision_cirle = false;
 	bool water_flow = false;
 	bool set_flow = false;
+	bool color = false;
 	
 	//FlowCircles
 	VectorD center_new;
@@ -92,6 +93,16 @@ public:
 		for (int i = 0; i < fluid.particles.Size(); i++) {
 			auto opengl_circle = opengl_circles[i];
 			opengl_circle->pos = V3(fluid.particles.X(i));
+			if (color) {
+				float green = fluid.particles.V(i).norm() / 5;
+				OpenGLColor c((green - 1) / 3, green, 2 - green, 1.f);
+				opengl_circle->color = c;
+			}
+			else {
+				OpenGLColor c(.5f, .5f,.5f, 1);
+				opengl_circle->color = c;
+			}
+			
 			opengl_circle->Set_Data_Refreshed();
 		}
 	}
@@ -113,19 +124,34 @@ public:
 	virtual void Initialize_Common_Callback_Keys()
 	{
 		OpenGLViewer::Initialize_Common_Callback_Keys();
-		Bind_Callback_Key('a', &Keyboard_Event_A_Func, "press A");
+		Bind_Callback_Key('a', &Keyboard_Event_A_Func, "Move Ball");
 
-		Bind_Callback_Key('w', &Keyboard_Event_W_Func, "press W");
+		Bind_Callback_Key('w', &Keyboard_Event_W_Func, "Add water");
 
-		Bind_Callback_Key('s', &Keyboard_Event_S_Func, "press S");
+		Bind_Callback_Key('s', &Keyboard_Event_S_Func, "Add flow");
 
-		Bind_Callback_Key('d', &Keyboard_Event_D_Func, "press D");
+		Bind_Callback_Key('d', &Keyboard_Event_D_Func, "Del flow");
 
-		Bind_Callback_Key('q', &Keyboard_Event_Q_Func, "press Q");
+		Bind_Callback_Key('q', &Keyboard_Event_Q_Func, "Add vicosity");
 
-		Bind_Callback_Key('e', &Keyboard_Event_E_Func, "press E");
+		Bind_Callback_Key('e', &Keyboard_Event_E_Func, "lower viscosity");
+
+		Bind_Callback_Key('c', &Keyboard_Event_C_Func, "Add color");
+
+		Bind_Callback_Key('z', &Keyboard_Event_Z_Func, "stop scorr");
 	}
 
+	virtual void Keyboard_Event_Z()
+	{
+		std::cout << "Z pressed" << std::endl;
+		fluid.do_s_corr = !fluid.do_s_corr;
+	}
+
+	virtual void Keyboard_Event_C()
+	{
+		std::cout << "C pressed" << std::endl;
+		color = !color;
+	}
 	virtual void Keyboard_Event_Q()
 	{
 		std::cout << "Q pressed" << std::endl;
@@ -168,6 +194,8 @@ public:
 		}
 	}
 
+	Define_Function_Object(ParticleFluidDriver2D, Keyboard_Event_Z);
+	Define_Function_Object(ParticleFluidDriver2D, Keyboard_Event_C);
 	Define_Function_Object(ParticleFluidDriver2D, Keyboard_Event_S);
 	Define_Function_Object(ParticleFluidDriver2D, Keyboard_Event_A);
 	Define_Function_Object(ParticleFluidDriver2D, Keyboard_Event_W);

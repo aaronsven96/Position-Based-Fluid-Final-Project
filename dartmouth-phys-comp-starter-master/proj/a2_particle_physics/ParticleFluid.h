@@ -183,6 +183,7 @@ public:
 	Array<VectorD> flow_direction;
 	bool is_flow = false;
 	Array<ImplicitGeometry<d>* > flow_objects;
+	bool do_s_corr = true;
 
 	SpatialHashing<d> spatial_hashing;
 	
@@ -298,19 +299,9 @@ public:
 		for (int i = 0; i < particles.Size(); i++) {
 			if (!is_boundary[i]) {
 				for (int idx : neighbors_boundary[i]) {
-					particles.F(i) -= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
+					VectorD force = b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
 						kernel.gradientWspiky(particles.X(i) - particles.X(idx));
-				}
-			}
-		}
-	}
-	virtual void Update_Boundary_Friction_Force() {
-		for (int i = 0; i < particles.Size(); i++) {
-			if (!is_boundary[i]) {
-				for (int idx : neighbors_boundary[i]) {
-					VectorD force= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
-						kernel.gradientWspiky(particles.X(i) - particles.X(idx));
-					particles.F(i) -= 100 *force;
+					particles.F(i) -= 400 * force;
 					//std::cout << "Force" << force << "\n";
 					/*std::cout << "Bvol" << b_volume[idx] << "\n";
 					std::cout << "Pressure" << particles.P(i) << "\n";
@@ -319,6 +310,21 @@ public:
 			}
 		}
 	}
+	/*virtual void Update_Boundary_Friction_Force() {
+		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
+				for (int idx : neighbors_boundary[i]) {
+					VectorD force= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
+						kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+					particles.F(i) -= 100 *force;
+					std::cout << "Force" << force << "\n";
+					std::cout << "Bvol" << b_volume[idx] << "\n";
+					std::cout << "Pressure" << particles.P(i) << "\n";
+					std::cout << "Density" << particles.D(i) << "\n";
+				}
+			}
+		}
+	}*/
 
 	virtual void Add_Boundary_Density() {
 		for (int i = 0; i < particles.Size(); i++) {
@@ -365,7 +371,7 @@ public:
 		Add_Boundary_Density();
 		Update_Pressure();
 		Update_Boundary_Pressure_Force();
-		Update_Boundary_Friction_Force();
+		//Update_Boundary_Friction_Force();
 
 
 		//predict postitions
@@ -427,24 +433,9 @@ public:
 				for (int idx : neighbors[i]) {
 					//std::cout << delta_positions[i];
 					//if(particles.X(i))
-
 					//s_corr = 0;
-					s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n);
-					// if (neighbors[i].size() <12) {
-					// 	// std::cout<<neighbors[i].size()<<"\n";
-					// real fract = (kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef);
-					// s_corr = -k * pow(fract, n);
-					// // if (fract>1){
-					// // 	// std::cout<<fract;
-					// // 	s_corr = -k*fract;
-					// // 	}
-
-
-					// // //std::cout << s_corr << "\n";
-					// }
-					//s_corr = 0;
-					// std::cout << s_corr << "\n";
-					//std::cout << lambda_i[i] + lambda_i[idx] << "\n";
+					if (do_s_corr) { s_corr = -k * pow((kernel.Wspiky(particles.X(i) - particles.X(idx)) / denom_coef), n); }
+				
 
 					delta_positions[i] += (lambda_i[i] + lambda_i[idx] + s_corr) * kernel.gradientWspiky(particles.X(i) - particles.X(idx));
 				}
@@ -505,7 +496,9 @@ public:
 	void Check_Boundary_Conditions() {
 		for (int i = 0; i < particles.Size(); i++) {
 			VectorD velocity = particles.V(i);
+			//std::cout << velocity.norm() << "\n";
 			if (velocity.norm() > velocity_max) {
+			
 				particles.V(i) = (velocity / velocity.norm()) * velocity_max;
 			}
 		}
