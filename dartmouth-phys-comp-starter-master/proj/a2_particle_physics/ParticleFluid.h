@@ -122,7 +122,7 @@ public:
 	////You need to traverse all the 3^d neighboring cells in the background grid around the cell occupied by "pos", and then check the distance between each particle in each neighboring cell and the given "pos"
 	////Use the helper function Cell_Coord to get the cell coordinates for a given "pos"
 	////Use the helper function Nb_R to get the cell coordinates of the ith neighboring cell around the cell "coord"
-	bool Find_Nbs(const VectorD& pos,const Array<VectorD>& points,const real kernel_radius,/*returned result*/Array<int>& nbs) const
+	bool Find_Nbs(const VectorD& pos,const Array<VectorD>& points,const real kernel_radius,/*returned result*/Array<int>& nbs,Array<int>& nbs_b,Array<bool>& isboundary) const
 	{
 		/* Your implementation start */
 		VectorDi cur= Cell_Coord(pos);
@@ -136,7 +136,13 @@ public:
 					int idx = negbors[j];
 					double val = (pos-points[idx]).norm();
 					if ((points[idx]-pos ).norm() < kernel_radius) {
-						nbs.push_back(idx);
+						if(isboundary[idx]){
+							nbs_b.push_back(idx);
+						}
+						else{ 
+							nbs.push_back(idx); 
+						}
+						
 					}
 				}
 			}
@@ -162,12 +168,17 @@ template<int d> class ParticleFluid
 public:
 	Particles<d> particles;
 	Array<Array<int> > neighbors;
+	Array<Array<int> > neighbors_boundary;
+	Array<bool> is_boundary;
 	
 	Array<VectorD> last_positions;			////temp positions in solver]]
 	Array<VectorD> delta_positions;			////change in positions in solver
 	Array<real> lambda_i;					////array for lambda values
 	Array<VectorD> weight_i;						////weight of the particles
 	
+	//Boundary Particle Volume
+	Array<real> b_volume;
+
 	//User Interaction
 	Array<VectorD> flow_direction;
 	bool is_flow = false;
@@ -217,12 +228,16 @@ public:
 		
 		spatial_hashing.Clear_Voxels();
 		spatial_hashing.Update_Voxels(particles.XRef());
-
+		
+		is_boundary.resize(particles.Size());
+		neighbors_boundary.resize(particles.Size());
 		neighbors.resize(particles.Size());
 		for(int i=0;i<particles.Size();i++){
 			Array<int> nbs;
-			spatial_hashing.Find_Nbs(particles.X(i),particles.XRef(),kernel_radius,nbs);
+			Array<int> nbs_b;
+			spatial_hashing.Find_Nbs(particles.X(i),particles.XRef(),kernel_radius,nbs,nbs_b, is_boundary);
 			neighbors[i]=nbs;
+			neighbors_boundary[i] = nbs_b;
 		}
 	}
 
@@ -267,10 +282,58 @@ public:
 			}
 		}
 	}
+	virtual void Update_Pressure()
+	{
+		for (int i = 0; i < particles.Size(); i++) {
+			particles.P(i) = (particles.D(i) - density_0) *pressure_density_coef;
+		}
+	}
+	virtual void Update_Boundary_Pressure_Force() {
+		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
+				for (int idx : neighbors_boundary[i]) {
+					particles.F(i) -= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
+						kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+				}
+			}
+		}
+	}
+	virtual void Update_Boundary_Friction_Force() {
+		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
+				for (int idx : neighbors_boundary[i]) {
+					particles.F(i) -= b_volume[idx] * (particles.P(i) / pow(particles.D(i), 2))*
+						kernel.gradientWspiky(particles.X(i) - particles.X(idx));
+				}
+			}
+		}
+	}
+
+	virtual void Add_Boundary_Pressure() {
+		for (int i = 0; i < particles.Size(); i++) {
+			if (!is_boundary[i]) {
+				for (int idx : neighbors_boundary[i]) {
+					particles.D(i) += b_volume[idx] * kernel.Wspiky(particles.X(i) - particles.X(idx));
+				}
+			}
+		}
+	}
+
+	virtual void Update_Boundary_Volume(){
+		for (int i = 0; i < particles.Size(); i++) {
+			if (is_boundary[i]) {
+				b_volume[i] = 0;
+				for (int idx : neighbors_boundary[i]) {
+					b_volume[i] += kernel.Wspiky(particles.X(i)-particles.X(idx));
+				}
+				b_volume[i] = (1 / b_volume[i])*density_0;
+			}
+		}
+	}
 
 	virtual void Advance(const real dt)
 	{
-		
+		b_volume.resize(particles.Size());
 		last_positions.resize(particles.Size());
 		delta_positions.resize(particles.Size());
 		lambda_i.resize(particles.Size());
@@ -411,7 +474,6 @@ public:
 				particles.V(i) = (velocity / velocity.norm()) * velocity_max;
 			}
 		}
-		
 	}
 
 	void Update_Boundary_Collision_Force()
