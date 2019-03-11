@@ -22,6 +22,7 @@ template<int d> class ParticleFluidDriver : public Driver, public OpenGLViewer
 	real dt=.02;
 	ParticleFluid<d> fluid;
 	Array<OpenGLSolidCircle*> opengl_circles;
+	Array<OpenGLSphere*> opengl_spheres;								////spheres
 
 	Bowl<d>* bowl=nullptr;
 	Sphere<d>* sphere= nullptr;
@@ -87,15 +88,23 @@ public:
 		}
 
 		for(int i=0;i<fluid.particles.Size();i++){
-			Add_Solid_Circle(i);}
+			Add_Sphere(i);}
+
+		// for(int i=0;i<fluid.particles.Size();i++){
+		// 	Add_Solid_Circle(i);}
 	}
 
 	void Sync_Simulation_And_Visualization_Data()
 	{
+		// for(int i=0;i<fluid.particles.Size();i++){
+		// 	auto opengl_circle=opengl_circles[i];
+		// 	opengl_circle->pos=V3(fluid.particles.X(i));
+		// 	opengl_circle->Set_Data_Refreshed();}
+		
 		for(int i=0;i<fluid.particles.Size();i++){
-			auto opengl_circle=opengl_circles[i];
-			opengl_circle->pos=V3(fluid.particles.X(i));
-			opengl_circle->Set_Data_Refreshed();}
+			auto opengl_sphere=opengl_spheres[i];
+			opengl_sphere->pos=V3(fluid.particles.X(i));
+			opengl_sphere->Set_Data_Refreshed();}
 	}
 
 	////update simulation and visualization for each time step
@@ -261,6 +270,21 @@ protected:
 		opengl_circle->Initialize();	
 	}
 
+	void Add_Sphere(const int i)
+	{	
+		OpenGLColor c;
+		for(int i=0;i<3;i++){
+			c.rgba[i]=static_cast<float>(rand()%1000)/1000.f;}
+		OpenGLSphere* opengl_sphere=Add_Interactive_Object<OpenGLSphere>();
+		opengl_sphere->pos=V3(fluid.particles.X(i));
+		opengl_sphere->radius=fluid.particles.R(i);
+		// Set_Color(opengl_sphere,OpenGLColor(.0+.05*(real)i,1.,.0+.05*(real)i,1.));
+		opengl_sphere->color=c;
+		opengl_sphere->Set_Data_Refreshed();
+		opengl_sphere->Initialize();
+		opengl_spheres.push_back(opengl_sphere);
+
+	}
 
 	////Helper function to convert a vector to 3d, for c++ template
 	Vector3 V3(const Vector2& v2){return Vector3(v2[0],v2[1],.0);}

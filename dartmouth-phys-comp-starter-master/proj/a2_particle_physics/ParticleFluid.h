@@ -95,22 +95,6 @@ public:
 //////////////////////////////////////////////////////////////////////////
 ////Spatial hashing
 
-namespace std {
-	template<> struct hash<Vector3i>
-	{
-		typedef Vector3i argument_type; typedef std::size_t result_type;
-		result_type operator()(argument_type const& arg) const
-		{
-			result_type const h1(std::hash<int>()(arg[0])); result_type const h2(std::hash<int>()(arg[1])); result_type const h3(std::hash<int>()(arg[2])); return h1 ^ (h2 << 1) ^ h3;
-		}
-	};
-}
-namespace std{
-template<> struct hash<Vector2i>
-{typedef Vector2i argument_type;typedef std::size_t result_type;
-	result_type operator()(argument_type const& arg) const
-	{result_type const h1(std::hash<int>()(arg[0]));result_type const h2(std::hash<int>()(arg[1]));return h1^(h2<<1);}
-};}
 
 template<int d> class SpatialHashing
 {using VectorD=Vector<real,d>;using VectorDi=Vector<int,d>;
