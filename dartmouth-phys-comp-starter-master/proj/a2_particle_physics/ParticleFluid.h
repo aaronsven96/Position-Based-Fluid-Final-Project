@@ -13,6 +13,41 @@
 
 // offline - record positions of particles 
 
+
+class Sphere{
+public:
+		VectorD center;
+	real radius;
+	Sphere(VectorD _center=VectorD::Zero(),real _radius=1.):center(_center),radius(_radius){}
+	virtual real Phi(const VectorD& pos) const {return (pos-center).norm()-radius;}
+	virtual VectorD Normal(const VectorD& pos) const {return (pos-center).normalized();}
+
+	virtual Array<VectorD> getParticleArray(double rad){
+
+
+
+		double arc = asin(rad/radius)*2 * radius;
+		real pi=3.1415927;
+		int n=floor((2*pi*radius)/arc);
+        
+		Array<VectorD> boundpos;
+
+
+        for(int i=0;i<n;i++){
+            real theta=2.pi(real)i/(real)n;
+            VectorD pos=VectorD::Zero();
+            pos[0]=particles.X(0)[0]+rcos(theta);
+            pos[1]=particles.X(0)[1]+rsin(theta);
+            boundpos.push_back(pos);}
+
+            return boundpos;
+	}
+
+
+
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 ////Kernel function
 template<int d> class Kernel
@@ -177,6 +212,7 @@ template<int d> class ParticleFluid
 {using VectorD=Vector<real,d>;
 public:
 	Particles<d> particles;
+	Particles<d> boundaryParticles;
 	Array<Array<int> > neighbors;
 	
 	Array<VectorD> last_positions;			////temp positions in solver]]
@@ -217,11 +253,30 @@ public:
 	
 	////Environment objects
 	Array<ImplicitGeometry<d>* > env_objects;
+	Array<Sphere*> particleObjects;
+
+
+	void Add_Particle_bound(VectorD pos, real m = 1.)
+	{
+		int i = fluid.particles.Add_Element();	////return the last element's index
+		boundaryParticles.X(i) = pos;
+		boundaryParticles.V(i) = VectorD::Zero();
+		boundaryParticles.R(i) = .1;
+		boundaryParticles.M(i) = m;
+		boundaryParticles.D(i) = 1.;
+	}
 
 	virtual void Initialize()
 	{
 		if (d == 2) {
 			density_0 = 10;
+		}
+
+		for(int i=0;i<particleObjects.size();i++){
+			Array<VectorD> boundpos = particleObjects[i]->getParticleArray(0.8);
+			for(int j=0;j<boundpos.size();j++){
+
+			}
 		}
 
 		kernel.Precompute_Coefs(kernel_radius);

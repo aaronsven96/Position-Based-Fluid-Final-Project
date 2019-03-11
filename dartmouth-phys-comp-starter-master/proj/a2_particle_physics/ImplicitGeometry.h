@@ -19,7 +19,7 @@ public:
 	virtual VectorD Normal(const VectorD& pos) const {return (center-pos).normalized();}
 };
 
-template<int d> class particleSphere<d>: public ImplicitGeometry<d>
+template<int d> class ParticleSphere<d>: public ImplicitGeometry<d>
 {using VectorD=Vector<real,d>;
 public:
 	VectorD center;

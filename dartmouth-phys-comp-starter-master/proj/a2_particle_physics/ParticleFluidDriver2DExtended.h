@@ -16,6 +16,40 @@
 #include "OpenGLMarkerObjects.h"
 #include "OpenGLParticles.h"
 
+
+class Sphereb{
+public:
+		VectorD center;
+	real radius;
+	Sphereb(VectorD _center=VectorD::Zero(),real _radius=1.):center(_center),radius(_radius){}
+	virtual real Phi(const VectorD& pos) const {return (pos-center).norm()-radius;}
+	virtual VectorD Normal(const VectorD& pos) const {return (pos-center).normalized();}
+
+	virtual Array<VectorD> getParticleArray(double rad){
+
+
+
+		double arc = asin(rad/radius)*2 * radius;
+		real pi=3.1415927;
+		int n=floor((2*pi*radius)/arc);
+        
+		Array<VectorD> boundpos;
+
+
+        for(int i=0;i<n;i++){
+            real theta=2.pi(real)i/(real)n;
+            VectorD pos=VectorD::Zero();
+            pos[0]=particles.X(0)[0]+rcos(theta);
+            pos[1]=particles.X(0)[1]+rsin(theta);
+            boundpos.push_back(pos);}
+
+            return boundpos;
+	}
+
+
+
+}
+
 // download bunny mesh, put particles in the mesh, and make radius large enough - create another particle system
 // treat in particle particle collision detection
 
@@ -41,9 +75,9 @@ template<int d> class ParticleFluidDriver2D : public Driver, public OpenGLViewer
 
 	Array<OpenGLSolidCircle*> opengl_circles;
 
-	Bowl<d>* bowl = nullptr;
-	Sphere<d>* sphere = nullptr;
-
+	//Bowl<d>* bowl = nullptr;
+	//Sphere<d>* sphere = nullptr;
+	Sphereb* sphere= nullptr;
 public:
 	virtual void Initialize()
 	{
@@ -56,11 +90,21 @@ public:
 			}
 		}
 
-		bowl = new ParticleSphere<d>(VectorD::Unit(1) * 8, 16);
-		//sphere = new ParticleSphere<d>(VectorD::Unit(1), 2);
-		sphere->center[0] += 1000;
-		fluid.env_objects.push_back(bowl);
+		//bowl = new Bowl<d>(VectorD::Unit(1) * 8, 16);
+		sphere = new Sphere<d>(VectorD::Unit(1) * 8, 16);
+		//sphere->center[0] += 1000;
+
+
+	
+		Array<VectorD> boundpos = sphere->getParticleArray(0.8);
+		for(int j=0;j<boundpos.size();j++){
+			Add_Particle_bound(boundpos[i]);
+		}
+		
+
+		//fluid.env_objects.push_back(bowl);
 		//fluid.env_objects.push_back(sphere);
+		//fluid.env_objects.push_back(bowl);
 
 		fluid.Initialize();
 
@@ -245,6 +289,16 @@ protected:
 		fluid.particles.M(i) = m;
 		fluid.particles.D(i) = 1.;
 	}
+	void Add_Particle_bound(VectorD pos, real m = 1.)
+	{
+		int i = fluid.boundaryParticles.Add_Element();	////return the last element's index
+		fluid.boundaryParticles.X(i) = pos;
+		fluid.boundaryParticles.V(i) = VectorD::Zero();
+		fluid.boundaryParticles.R(i) = .1;
+		fluid.boundaryParticles.M(i) = m;
+		fluid.boundaryParticles.D(i) = 1.;
+	}
+
 
 	void Add_Solid_Circle(const int i)
 	{
