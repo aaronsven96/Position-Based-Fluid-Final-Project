@@ -26,6 +26,7 @@ template<int d> class ParticleFluidDriver : public Driver, public OpenGLViewer
 
 	Bowl<d>* bowl=nullptr;
 	Sphere<d>* sphere= nullptr;
+	OpenGLSphere* moving_sphere;
 
 	//interaction Booleans
 	bool collision_cirle = false;
@@ -77,12 +78,12 @@ public:
 		}
 
 		if(sphere){
-			OpenGLSphere* opengl_sphere=Add_Interactive_Object<OpenGLSphere>();
-			Set_Color(opengl_sphere,OpenGLColor(.0+.05,1.,.0+.05,1.));
-			opengl_sphere->pos=V3(sphere->center);
-			opengl_sphere->radius=sphere->radius;
-			opengl_sphere->Set_Data_Refreshed();
-			opengl_sphere->Initialize();			
+			moving_sphere=Add_Interactive_Object<OpenGLSphere>();
+			Set_Color(moving_sphere,OpenGLColor(.0+.05,1.,.0+.05,1.));
+			moving_sphere->pos=V3(sphere->center);
+			moving_sphere->radius=sphere->radius;
+			moving_sphere->Set_Data_Refreshed();
+			moving_sphere->Initialize();			
 		}
 
 		for(int i=0;i<fluid.particles.Size();i++){
@@ -93,7 +94,10 @@ public:
 	}
 
 	void Sync_Simulation_And_Visualization_Data()
-	{
+	{	
+		moving_sphere->pos=V3(sphere->center);
+		moving_sphere->Set_Data_Refreshed();
+		
 		// for(int i=0;i<fluid.particles.Size();i++){
 		// 	auto opengl_circle=opengl_circles[i];
 		// 	opengl_circle->pos=V3(fluid.particles.X(i));
